@@ -1,4 +1,4 @@
-import { Calculator, Fish, Home, ListChecks, LogOut, Scale, Settings, Trophy, UserRound, Users } from 'lucide-react';
+import { Calculator, Fish, Home, ListChecks, LogOut, Settings, Trophy, UserRound, Users } from 'lucide-react';
 import { BrandFooter } from './BrandFooter';
 import type { NavItem, PageKey } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,7 +12,6 @@ const navItems: NavItem[] = [
   { key: 'rules', label: 'Regulamento', icon: ListChecks },
   { key: 'profile', label: 'Perfil', icon: UserRound },
   { key: 'team', label: 'Equipes', icon: Users },
-  { key: 'weighing', label: 'Pesagem', icon: Scale },
   { key: 'settings', label: 'Ajustes', icon: Settings },
 ];
 
@@ -41,10 +40,9 @@ export function Shell({ activePage, onNavigate, children }: ShellProps) {
       <header className="app-header">
         <div className="mx-auto flex min-h-[64px] max-w-6xl items-center justify-between gap-3 px-4 py-2 sm:min-h-[72px] sm:px-6 sm:py-3">
           <button className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left" onClick={() => onNavigate('home')} type="button">
-            <img alt="Santo Circuito" className="h-11 w-11 shrink-0 rounded-2xl object-contain shadow-soft sm:h-12 sm:w-12" src="/logo-santo-circuito.png" />
+            <img alt="Santo Circuito" className="h-12 w-12 shrink-0 rounded-2xl object-contain shadow-soft sm:h-[53px] sm:w-[53px]" src="/logo-santo-circuito.png" />
             <span className="min-w-0">
-              <span className="block truncate text-sm font-bold leading-tight text-sea sm:text-base">Rali de Pesca Solidária</span>
-              <span className="block text-xs text-graphite/65">Noronha 2026</span>
+              <span className="block truncate text-sm font-bold leading-tight text-sea sm:text-base">Rali de Pesca</span>
             </span>
           </button>
 
@@ -69,9 +67,9 @@ export function Shell({ activePage, onNavigate, children }: ShellProps) {
           </nav>
 
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <div className="min-w-0 max-w-[96px] text-right sm:block sm:max-w-[170px]">
-              <p className="truncate text-xs font-bold text-graphite sm:text-sm">{displayName}</p>
-              <p className="text-xs capitalize text-graphite/60">{profile?.role ?? 'participant'}</p>
+            <div className="min-w-0 max-w-[132px] text-right sm:block sm:max-w-[240px] lg:max-w-none">
+              <p className="text-xs font-bold text-graphite sm:text-sm lg:whitespace-nowrap">{displayName}</p>
+              <p className="text-xs font-bold uppercase text-graphite/60">{profile?.role ?? 'participant'}</p>
             </div>
             <button className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sea text-sm font-bold text-white shadow-soft" onClick={() => onNavigate('profile')} type="button">
               {initials}

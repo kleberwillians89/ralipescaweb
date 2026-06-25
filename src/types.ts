@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 
-export type PageKey = 'home' | 'calculator' | 'species' | 'rules' | 'ranking' | 'team' | 'settings' | 'profile' | 'weighing';
+export type PageKey = 'home' | 'calculator' | 'species' | 'rules' | 'ranking' | 'team' | 'settings' | 'profile';
 
 export type NavItem = {
   key: PageKey;

@@ -10,7 +10,6 @@ import { RulesPage } from './pages/RulesPage';
 import { SplashScreen } from './pages/SplashScreen';
 import { SpeciesPage } from './pages/SpeciesPage';
 import { TeamsPage } from './pages/TeamsPage';
-import { WeighingPage } from './pages/WeighingPage';
 import type { PageKey } from './types';
 import { Card } from './components/Card';
 import { PageHeader } from './components/PageHeader';
@@ -57,7 +56,6 @@ function AppContent() {
     team: <TeamsPage />,
     settings: <ComingSoonPage title="Configurações" description="Preferências do aplicativo, conta, notificações e futura conexão com Supabase." />,
     profile: <ProfilePage />,
-    weighing: <WeighingPage />,
   };
 
   return (

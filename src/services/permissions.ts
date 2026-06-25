@@ -2,7 +2,7 @@ import type { PageKey } from '../types';
 import type { Profile, UserRole } from '../types/database';
 
 const basePages: PageKey[] = ['home', 'calculator', 'species', 'rules', 'ranking', 'profile'];
-const commissionPages: PageKey[] = [...basePages, 'team', 'weighing'];
+const commissionPages: PageKey[] = [...basePages, 'team'];
 const adminPages: PageKey[] = [...commissionPages, 'settings'];
 
 export const getAllowedPages = (role: UserRole = 'participant'): PageKey[] => {
