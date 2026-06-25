@@ -1,16 +1,16 @@
 import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { Profile, UserRole } from '../types/database';
+import type { Profile } from '../types/database';
 import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
 
 type SignUpProfileData = {
   full_name?: string;
-  role?: UserRole;
+  phone?: string;
 };
 
 type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, profileData?: SignUpProfileData) => Promise<void>;
+  signUp: (email: string, password: string, profileData?: SignUpProfileData) => Promise<{ needsEmailConfirmation: boolean }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   getCurrentUser: () => Promise<User | null>;
@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!supabase) {
           setDemoAuthenticated(true);
           setProfile({ ...demoProfile, full_name: profileData?.full_name ?? demoProfile.full_name });
-          return;
+          return { needsEmailConfirmation: false };
         }
 
         const { data, error } = await supabase.auth.signUp({
@@ -144,6 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           options: {
             data: {
               full_name: profileData?.full_name ?? '',
+              phone: profileData?.phone ?? '',
             },
           },
         });
@@ -156,12 +157,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: data.user.id,
             email: data.user.email ?? email,
             full_name: profileData?.full_name ?? email.split('@')[0],
+            phone: profileData?.phone ?? null,
             role: 'participant',
           });
           if (profileError) {
             throw profileError;
           }
         }
+
+        return { needsEmailConfirmation: !data.session };
       },
       signOut: async () => {
         if (supabase) {
