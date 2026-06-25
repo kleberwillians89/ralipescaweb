@@ -8,7 +8,7 @@ export type NavItem = {
   icon: LucideIcon;
 };
 
-export type FishCategory = 'Nobre' | 'Especial' | 'Tradicional' | 'Conservação';
+export type FishCategory = 'Premium' | 'Intermediária' | 'Comum';
 
 export type Species = {
   id: string;
@@ -16,7 +16,8 @@ export type Species = {
   category: FishCategory;
   multiplier: number;
   fishingMethod: string;
-  minimumWeightKg: number;
+  minimumWeightKg?: number | null;
+  isCoinFish?: boolean;
   coinMinimumWeightKg?: number | null;
 };
 
@@ -24,6 +25,7 @@ export type CatchEntry = {
   id: string;
   speciesId: string;
   weightKg: number;
+  returnedAt?: string;
 };
 
 export type RankingTeam = {
@@ -42,4 +44,5 @@ export type RankingTeam = {
   biggestFishWeight?: number | null;
   biggestFishSpecies?: string | null;
   returnedAt?: string | null;
+  grossWeightTotalKg?: number | null;
 };

@@ -23,6 +23,7 @@ const mapRankingRow = (row: RankingRow): RankingTeam => ({
   biggestFishWeight: row.biggest_fish_weight,
   biggestFishSpecies: row.biggest_fish_species,
   returnedAt: row.returned_at,
+  grossWeightTotalKg: row.gross_weight_total_kg ?? null,
 });
 
 export const getRanking = async (): Promise<RankingTeam[]> => {

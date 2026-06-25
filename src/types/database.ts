@@ -100,6 +100,7 @@ export type RankingRow = {
   penalty: number;
   biggest_fish_weight: number | null;
   biggest_fish_species: string | null;
+  gross_weight_total_kg?: number | null;
   valid_catches_count: number;
   returned_at: string | null;
   position: number;

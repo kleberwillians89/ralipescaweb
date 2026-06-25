@@ -39,6 +39,9 @@ export function SpeciesPage() {
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">{item.category}</p>
                 <h2 className="mt-2 text-2xl font-bold text-sea">{item.name}</h2>
+                {item.isCoinFish || item.coinMinimumWeightKg ? (
+                  <span className="mt-3 inline-flex rounded-full bg-sand px-3 py-1 text-xs font-bold text-sea">Peixe da Moeda</span>
+                ) : null}
               </div>
               <span className="rounded-full bg-sea px-3 py-1 text-sm font-bold text-white">x{item.multiplier}</span>
             </div>
@@ -49,12 +52,14 @@ export function SpeciesPage() {
               </p>
               <p className="flex gap-3">
                 <Scale className="mt-0.5 text-turquoise" size={18} strokeWidth={1.7} />
-                <span>Peso mínimo: {item.minimumWeightKg.toLocaleString('pt-BR')} kg</span>
+                <span>
+                  Peso mínimo: {item.minimumWeightKg ? `${item.minimumWeightKg.toLocaleString('pt-BR')} kg` : 'Não configurado'}
+                </span>
               </p>
               {item.coinMinimumWeightKg ? (
                 <p className="flex gap-3">
                   <Scale className="mt-0.5 text-gold" size={18} strokeWidth={1.7} />
-                  <span>Peso mínimo Peixe da Moeda: {item.coinMinimumWeightKg.toLocaleString('pt-BR')} kg</span>
+                  <span>Peso mínimo Peixe da Moeda: {item.coinMinimumWeightKg.toLocaleString('pt-BR')} kg · bônus +20%</span>
                 </p>
               ) : null}
             </div>

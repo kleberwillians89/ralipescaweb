@@ -1,7 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import { Card } from '../components/Card';
 import { PageHeader } from '../components/PageHeader';
-import { ruleCards } from '../data/rules';
+import { captainDecalogue, ruleCards } from '../data/rules';
 
 export function RulesPage() {
   return (
@@ -33,6 +33,37 @@ export function RulesPage() {
           );
         })}
       </div>
+
+      <section className="mt-8">
+        <PageHeader
+          eyebrow="Espírito do Rali"
+          title="Tábua de Bordo"
+          description="Fé, mar, competição leal e partilha orientam a operação do Rali de Pesca Solidária Noronha 2026."
+        />
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+          <Card>
+            <h2 className="text-xl font-bold text-sea">Regras Gerais</h2>
+            <div className="mt-4 space-y-3 text-sm leading-6 text-graphite/70">
+              <p>Até 6 peixes válidos pontuam por equipe; capturas excedentes permanecem no histórico oficial.</p>
+              <p>O cálculo considera peso em gramas, categoria da espécie, Peixe da Moeda, Cardume, Providência e penalidades.</p>
+              <p>O desempate segue maior peso bruto total, maior peixe individual e horário de entrega.</p>
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="text-xl font-bold text-sea">Decálogo do Capitão</h2>
+            <ol className="mt-4 space-y-3 text-sm leading-6 text-graphite/70">
+              {captainDecalogue.map((item, index) => (
+                <li key={item} className="flex gap-3">
+                  <span className="font-bold text-gold">{index + 1}.</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ol>
+          </Card>
+        </div>
+      </section>
     </div>
   );
 }

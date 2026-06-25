@@ -46,7 +46,7 @@ export function RankingPage() {
       <PageHeader
         eyebrow="Classificação"
         title="Ranking oficial"
-        description="Acompanhe a pontuação das equipes, embarcações e maiores capturas registradas na prova."
+        description="Acompanhe a pontuação oficial. Desempate: maior peso bruto total, maior peixe individual e horário de entrega."
       />
 
       {loading ? <p className="text-sm font-semibold text-graphite/70">Atualizando ranking...</p> : null}
@@ -71,6 +71,7 @@ export function RankingPage() {
                     Maior peixe: {team.biggestFishSpecies ?? 'Não informado'}
                     {team.biggestFishWeight ? ` · ${team.biggestFishWeight.toLocaleString('pt-BR')} kg` : ''}
                   </p>
+                  <p>Peso bruto total: {team.grossWeightTotalKg ? `${team.grossWeightTotalKg.toLocaleString('pt-BR')} kg` : 'Não informado'}</p>
                   <p>Base: {(team.baseScore ?? 0).toLocaleString('pt-BR')}</p>
                   <p>Bônus moeda: {(team.coinBonus ?? 0).toLocaleString('pt-BR')}</p>
                   <p>Bônus cardume: {(team.schoolBonus ?? 0).toLocaleString('pt-BR')}</p>

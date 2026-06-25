@@ -30,6 +30,14 @@ export function WeighingPage() {
   const [notes, setNotes] = useState('');
   const [feedback, setFeedback] = useState('');
   const [saving, setSaving] = useState(false);
+  const selectedSpecies = species.find((item) => item.id === speciesId);
+  const weightNumber = Number(weightKg);
+  const isCoinFishByRule = Boolean(
+    selectedSpecies &&
+      (selectedSpecies.isCoinFish || selectedSpecies.coinMinimumWeightKg) &&
+      selectedSpecies.coinMinimumWeightKg &&
+      weightNumber >= selectedSpecies.coinMinimumWeightKg,
+  );
 
   useEffect(() => {
     Promise.all([getTeams(), getActiveSpecies()])
@@ -50,14 +58,13 @@ export function WeighingPage() {
       return;
     }
 
-    if (!teamId || !speciesId || Number(weightKg) <= 0) {
+    if (!teamId || !speciesId || weightNumber <= 0) {
       setFeedback('Informe equipe, espécie e peso válido.');
       return;
     }
 
     const selectedTeam = teams.find((team) => team.id === teamId);
-    const selectedSpecies = species.find((item) => item.id === speciesId);
-    const confirmed = window.confirm(`Confirmar pesagem de ${Number(weightKg).toLocaleString('pt-BR')} kg para ${selectedTeam?.name ?? 'equipe'} (${selectedSpecies?.name ?? 'espécie'})?`);
+    const confirmed = window.confirm(`Confirmar pesagem de ${weightNumber.toLocaleString('pt-BR')} kg para ${selectedTeam?.name ?? 'equipe'} (${selectedSpecies?.name ?? 'espécie'})?`);
     if (!confirmed) {
       return;
     }
@@ -67,8 +74,8 @@ export function WeighingPage() {
       const savedCatch = await createCatch({
         team_id: teamId,
         species_id: speciesId,
-        weight_kg: Number(weightKg),
-        is_coin_fish: isCoinFish,
+        weight_kg: weightNumber,
+        is_coin_fish: isCoinFish || isCoinFishByRule,
         returned_at: returnedAt ? new Date(returnedAt).toISOString() : null,
         created_by: profile?.id ?? null,
         notes: notes || null,
@@ -88,17 +95,16 @@ export function WeighingPage() {
       const teamCatches = await getCatchesByTeam(teamId);
       const entries = teamCatches.map((item) => ({
         id: item.id,
-        speciesId: item.species_id,
-        weightKg: Number(item.weight_kg),
-      }));
+          speciesId: item.species_id,
+          weightKg: Number(item.weight_kg),
+        }));
       if (!teamCatches.some((item) => item.id === savedCatch.id)) {
         entries.push({ id: savedCatch.id, speciesId: savedCatch.species_id, weightKg: Number(savedCatch.weight_kg) });
       }
       const score = calculateScore(
         entries,
         {
-          hasCoinFish: teamCatches.some((item) => item.is_coin_fish) || savedCatch.is_coin_fish,
-          hasTemporalBonus: Boolean(returnedAt),
+          returnedAt,
           manualPenaltyMode,
           manualPenaltyValue: applyManualPenalty ? Number(manualPenaltyValue) : 0,
         },
@@ -184,7 +190,12 @@ export function WeighingPage() {
         <label className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-sand/70 p-4">
           <span>
             <span className="block font-bold text-sea">Peixe da Moeda</span>
-            <span className="text-sm text-graphite/70">Marca a captura como bônus especial.</span>
+            <span className="text-sm text-graphite/70">
+              {selectedSpecies?.coinMinimumWeightKg
+                ? `Bônus automático com ${selectedSpecies.coinMinimumWeightKg.toLocaleString('pt-BR')} kg ou mais.`
+                : 'Marca a captura como bônus especial.'}
+            </span>
+            {isCoinFishByRule ? <span className="mt-2 inline-flex rounded-full bg-sand px-3 py-1 text-xs font-bold text-sea">Peixe da Moeda +20%</span> : null}
           </span>
           <input checked={isCoinFish} className="h-5 w-5 accent-gold" onChange={(event) => setIsCoinFish(event.target.checked)} type="checkbox" />
         </label>

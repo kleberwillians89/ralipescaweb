@@ -16,8 +16,7 @@ export function CalculatorPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamId, setTeamId] = useState('');
   const [entries, setEntries] = useState<CatchEntry[]>([createCatchEntry(), createCatchEntry(), createCatchEntry()]);
-  const [hasCoinFish, setHasCoinFish] = useState(false);
-  const [hasTemporalBonus, setHasTemporalBonus] = useState(false);
+  const [returnedAt, setReturnedAt] = useState('');
   const [applyManualPenalty, setApplyManualPenalty] = useState(false);
   const [manualPenaltyMode, setManualPenaltyMode] = useState<'percent' | 'points'>('percent');
   const [manualPenaltyValue, setManualPenaltyValue] = useState('');
@@ -40,16 +39,15 @@ export function CalculatorPage() {
       calculateScore(
         entries,
         {
-          hasCoinFish,
-          hasTemporalBonus,
+          returnedAt,
           manualPenaltyMode,
           manualPenaltyValue: applyManualPenalty ? Number(manualPenaltyValue) : 0,
         },
         species,
       ),
-    [applyManualPenalty, entries, hasCoinFish, hasTemporalBonus, manualPenaltyMode, manualPenaltyValue, species],
+    [applyManualPenalty, entries, manualPenaltyMode, manualPenaltyValue, returnedAt, species],
   );
-  const canAddFish = entries.length < 6;
+  const canAddFish = entries.length < 12;
 
   const updateEntry = (id: string, changes: Partial<CatchEntry>) => {
     setEntries((current) => current.map((entry) => (entry.id === id ? { ...entry, ...changes } : entry)));
@@ -97,6 +95,7 @@ export function CalculatorPage() {
             <Card key={entry.id} className="overflow-hidden">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-lg font-bold text-sea">Peixe {index + 1}</h2>
+                {index >= 6 ? <span className="rounded-full bg-sand/70 px-3 py-1 text-xs font-bold text-graphite/70">Histórico</span> : null}
                 <button
                   aria-label="Remover peixe"
                   className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-sand text-graphite/70 transition hover:border-gold hover:text-sea disabled:opacity-30"
@@ -138,6 +137,19 @@ export function CalculatorPage() {
                   />
                 </label>
               </div>
+              {(() => {
+                const selectedSpecies = species.find((item) => item.id === entry.speciesId);
+                return selectedSpecies?.isCoinFish || selectedSpecies?.coinMinimumWeightKg ? (
+                  <div className="mt-4 rounded-2xl border border-gold/40 bg-sand/35 px-4 py-3 text-sm font-semibold text-sea">
+                    Peixe da Moeda +20%
+                    {selectedSpecies.coinMinimumWeightKg ? (
+                      <span className="block text-xs font-semibold text-graphite/70">
+                        Peso mínimo: {selectedSpecies.coinMinimumWeightKg.toLocaleString('pt-BR')} kg
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null;
+              })()}
             </Card>
           ))}
 
@@ -155,8 +167,7 @@ export function CalculatorPage() {
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-sand bg-white px-5 py-3 text-sm font-bold text-sea transition hover:-translate-y-0.5 hover:border-gold"
               onClick={() => {
                 setEntries([createCatchEntry(species[0]?.id), createCatchEntry(species[0]?.id), createCatchEntry(species[0]?.id)]);
-                setHasCoinFish(false);
-                setHasTemporalBonus(false);
+                setReturnedAt('');
               }}
               type="button"
             >
@@ -175,19 +186,17 @@ export function CalculatorPage() {
 
           <Card>
             <div className="space-y-3">
-              <label className="flex min-w-0 items-center justify-between gap-4 rounded-2xl border border-sand/70 p-4 transition hover:border-gold">
-                <span className="min-w-0">
-                  <span className="block font-bold text-sea">Peixe da Moeda</span>
-                  <span className="text-sm text-graphite/70">+15 pontos</span>
-                </span>
-                <input checked={hasCoinFish} className="h-5 w-5 accent-gold" onChange={(event) => setHasCoinFish(event.target.checked)} type="checkbox" />
-              </label>
-              <label className="flex min-w-0 items-center justify-between gap-4 rounded-2xl border border-sand/70 p-4 transition hover:border-gold">
-                <span className="min-w-0">
+              <label className="grid min-w-0 gap-2 rounded-2xl border border-sand/70 p-4 transition hover:border-gold">
+                <span>
                   <span className="block font-bold text-sea">Bônus Temporal</span>
-                  <span className="text-sm text-graphite/70">+8% da base</span>
+                  <span className="text-sm text-graphite/70">Até 09h30: +8%. 09h31 até 10h00: +5%.</span>
                 </span>
-                <input checked={hasTemporalBonus} className="h-5 w-5 accent-gold" onChange={(event) => setHasTemporalBonus(event.target.checked)} type="checkbox" />
+                <input
+                  className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3"
+                  onChange={(event) => setReturnedAt(event.target.value)}
+                  type="datetime-local"
+                  value={returnedAt}
+                />
               </label>
               <label className="flex min-w-0 items-center justify-between gap-4 rounded-2xl border border-sand/70 p-4 transition hover:border-gold">
                 <span className="min-w-0">
@@ -215,11 +224,16 @@ export function CalculatorPage() {
           <Card>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between gap-4"><dt className="min-w-0">Base por espécie</dt><dd className="shrink-0 font-bold text-sea">{formatScore(score.baseScore)}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="min-w-0">Peixe da Moeda</dt><dd className="shrink-0 font-bold text-sea">{formatScore(score.coinFishBonus)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="min-w-0">Peixe da Moeda +20%</dt><dd className="shrink-0 font-bold text-sea">{formatScore(score.coinFishBonus)}</dd></div>
               <div className="flex justify-between gap-4"><dt className="min-w-0">Bônus Cardume</dt><dd className="shrink-0 font-bold text-sea">{formatScore(score.schoolBonus)}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="min-w-0">Bônus Temporal</dt><dd className="shrink-0 font-bold text-sea">{formatScore(score.temporalBonus)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="min-w-0">Bônus Temporal ({Math.round(score.temporalRate * 100)}%)</dt><dd className="shrink-0 font-bold text-sea">{formatScore(score.temporalBonus)}</dd></div>
               <div className="flex justify-between gap-4 text-gold"><dt className="min-w-0">Penalidade automática</dt><dd className="shrink-0 font-bold">-{formatScore(score.lowVolumePenalty)}</dd></div>
               <div className="flex justify-between gap-4 text-gold"><dt className="min-w-0">Penalidade manual</dt><dd className="shrink-0 font-bold">-{formatScore(score.manualPenalty)}</dd></div>
+              <div className="border-t border-sand pt-3 text-graphite/70">
+                <p>{score.scoredFishCount} peixe(s) pontuando de {score.validFishCount} válido(s).</p>
+                {score.ignoredFishCount ? <p>{score.ignoredFishCount} peixe(s) mantido(s) no histórico sem pontuar.</p> : null}
+                <p>Peso bruto total: {score.grossWeightTotalKg.toLocaleString('pt-BR')} kg</p>
+              </div>
             </dl>
           </Card>
         </aside>
