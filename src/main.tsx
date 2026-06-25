@@ -9,6 +9,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 );
 
+console.info('Rali Pesca build:', import.meta.env.VITE_APP_VERSION ?? 'dev');
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     const registrations = await navigator.serviceWorker.getRegistrations();

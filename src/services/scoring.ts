@@ -10,6 +10,7 @@ const MAX_FISH = 6;
 
 export type ScoreOptions = {
   returnedAt?: string;
+  totalFishPresented?: number | null;
   manualPenaltyMode?: 'percent' | 'points';
   manualPenaltyValue?: number;
 };
@@ -24,6 +25,7 @@ export type ScoreBreakdown = {
   manualPenalty: number;
   total: number;
   validFishCount: number;
+  fishCountForPenalty: number;
   scoredFishCount: number;
   ignoredFishCount: number;
   grossWeightTotalKg: number;
@@ -96,7 +98,9 @@ export const calculateScore = (entries: CatchEntry[], options: ScoreOptions, ava
   const temporalRate = getTemporalRate(options.returnedAt);
   const temporalBonus = scoredEntriesWithSpecies.length > 0 ? baseScore * temporalRate : 0;
   const subtotal = baseScore + coinFishBonus + schoolBonus + temporalBonus;
-  const lowVolumePenalty = scoredEntriesWithSpecies.length > 0 && scoredEntriesWithSpecies.length < 3 ? subtotal * LOW_VOLUME_PENALTY_RATE : 0;
+  const totalFishPresented = Number(options.totalFishPresented ?? 0);
+  const fishCountForPenalty = totalFishPresented > 0 ? totalFishPresented : allValidEntries.length;
+  const lowVolumePenalty = fishCountForPenalty > 0 && fishCountForPenalty < 3 ? subtotal * LOW_VOLUME_PENALTY_RATE : 0;
   const manualPenaltyValue = Number(options.manualPenaltyValue ?? 0);
   const manualPenalty =
     manualPenaltyValue > 0
@@ -116,6 +120,7 @@ export const calculateScore = (entries: CatchEntry[], options: ScoreOptions, ava
     manualPenalty,
     total,
     validFishCount: allValidEntries.length,
+    fishCountForPenalty,
     scoredFishCount: scoredEntriesWithSpecies.length,
     ignoredFishCount: Math.max(0, allValidEntries.length - MAX_FISH),
     grossWeightTotalKg: allValidEntries.reduce((total, entry) => total + entry.weightKg, 0),

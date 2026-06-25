@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card } from '../components/Card';
 import { PageHeader } from '../components/PageHeader';
 import { species as demoSpecies } from '../data/species';
+import { formatSupabaseError } from '../services/errorMessages';
 import { calculateScore, createCatchEntry } from '../services/scoring';
 import { getActiveSpecies } from '../services/speciesService';
 import { getTeams } from '../services/teamService';
@@ -16,12 +17,14 @@ export function CalculatorPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamId, setTeamId] = useState('');
   const [entries, setEntries] = useState<CatchEntry[]>([createCatchEntry(), createCatchEntry(), createCatchEntry()]);
+  const [totalFishPresented, setTotalFishPresented] = useState('');
   const [returnedAt, setReturnedAt] = useState('');
   const [applyManualPenalty, setApplyManualPenalty] = useState(false);
   const [manualPenaltyMode, setManualPenaltyMode] = useState<'percent' | 'points'>('percent');
   const [manualPenaltyValue, setManualPenaltyValue] = useState('');
   const [manualPenaltyReason, setManualPenaltyReason] = useState('');
   const [manualPenaltyNotes, setManualPenaltyNotes] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     Promise.all([getActiveSpecies(), getTeams()])
@@ -31,7 +34,10 @@ export function CalculatorPage() {
         setTeamId(loadedTeams[0]?.id ?? '');
         setEntries((current) => current.map((entry) => ({ ...entry, speciesId: loadedSpecies.some((item) => item.id === entry.speciesId) ? entry.speciesId : loadedSpecies[0]?.id ?? entry.speciesId })));
       })
-      .catch((error) => console.error('[Rali Noronha] Erro ao carregar dados da calculadora:', error));
+      .catch((error) => {
+        console.error('[Calculator] Erro ao carregar dados:', error);
+        setLoadError(formatSupabaseError(error, 'Erro ao carregar dados da calculadora.'));
+      });
   }, []);
 
   const score = useMemo(
@@ -40,12 +46,13 @@ export function CalculatorPage() {
         entries,
         {
           returnedAt,
+          totalFishPresented: totalFishPresented ? Number(totalFishPresented) : null,
           manualPenaltyMode,
           manualPenaltyValue: applyManualPenalty ? Number(manualPenaltyValue) : 0,
         },
         species,
       ),
-    [applyManualPenalty, entries, manualPenaltyMode, manualPenaltyValue, returnedAt, species],
+    [applyManualPenalty, entries, manualPenaltyMode, manualPenaltyValue, returnedAt, species, totalFishPresented],
   );
   const canAddFish = entries.length < 12;
 
@@ -66,27 +73,42 @@ export function CalculatorPage() {
       />
 
       <Card className="mb-5">
+        {loadError ? <p className="mb-4 rounded-2xl bg-sand/45 px-4 py-3 text-sm font-semibold text-graphite/75">{loadError}</p> : null}
         {teams.length === 0 ? (
           <p className="mb-4 rounded-2xl bg-sand/45 px-4 py-3 text-sm font-semibold text-graphite/75">
-            Nenhuma equipe cadastrada. A comissão precisa cadastrar uma equipe antes da pesagem.
+            Nenhuma equipe cadastrada. Cadastre uma equipe antes de calcular oficialmente.
           </p>
         ) : null}
-        <label className="space-y-2">
-          <span className="text-sm font-semibold text-graphite/70">Selecionar equipe</span>
-          <select
-            className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 text-base outline-none transition focus:border-gold"
-            onChange={(event) => setTeamId(event.target.value)}
-            required
-            value={teamId}
-          >
-            <option value="">Selecione uma equipe</option>
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}{team.boat_name ? ` - ${team.boat_name}` : ''}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-graphite/70">Equipe</span>
+            <select
+              className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 text-base outline-none transition focus:border-gold"
+              onChange={(event) => setTeamId(event.target.value)}
+              required
+              value={teamId}
+            >
+              <option value="">Selecione uma equipe</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}{team.boat_name ? ` - ${team.boat_name}` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-graphite/70">Total de peixes apresentados</span>
+            <input
+              className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 text-base outline-none transition focus:border-gold"
+              inputMode="numeric"
+              min="0"
+              onChange={(event) => setTotalFishPresented(event.target.value)}
+              placeholder="Usa peixes preenchidos se vazio"
+              type="number"
+              value={totalFishPresented}
+            />
+          </label>
+        </div>
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -167,6 +189,7 @@ export function CalculatorPage() {
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-sand bg-white px-5 py-3 text-sm font-bold text-sea transition hover:-translate-y-0.5 hover:border-gold"
               onClick={() => {
                 setEntries([createCatchEntry(species[0]?.id), createCatchEntry(species[0]?.id), createCatchEntry(species[0]?.id)]);
+                setTotalFishPresented('');
                 setReturnedAt('');
               }}
               type="button"
@@ -231,6 +254,7 @@ export function CalculatorPage() {
               <div className="flex justify-between gap-4 text-gold"><dt className="min-w-0">Penalidade manual</dt><dd className="shrink-0 font-bold">-{formatScore(score.manualPenalty)}</dd></div>
               <div className="border-t border-sand pt-3 text-graphite/70">
                 <p>{score.scoredFishCount} peixe(s) pontuando de {score.validFishCount} válido(s).</p>
+                <p>Penalidade calculada sobre {score.fishCountForPenalty} peixe(s) apresentado(s).</p>
                 {score.ignoredFishCount ? <p>{score.ignoredFishCount} peixe(s) mantido(s) no histórico sem pontuar.</p> : null}
                 <p>Peso bruto total: {score.grossWeightTotalKg.toLocaleString('pt-BR')} kg</p>
               </div>

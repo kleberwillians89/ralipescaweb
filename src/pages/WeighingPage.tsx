@@ -2,8 +2,10 @@ import { Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Card } from '../components/Card';
 import { PageHeader } from '../components/PageHeader';
+import { useAuth } from '../contexts/AuthContext';
 import { createCatch } from '../services/catchService';
 import { getCatchesByTeam } from '../services/catchService';
+import { formatSupabaseError } from '../services/errorMessages';
 import { createPenalty } from '../services/penaltyService';
 import { calculateScore } from '../services/scoring';
 import { createScoreSubmission } from '../services/scoreSubmissionService';
@@ -12,7 +14,6 @@ import { getTeams } from '../services/teamService';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import type { Species } from '../types';
 import type { Team } from '../types/database';
-import { useAuth } from '../contexts/AuthContext';
 
 export function WeighingPage() {
   const { profile } = useAuth();
@@ -21,6 +22,7 @@ export function WeighingPage() {
   const [teamId, setTeamId] = useState('');
   const [speciesId, setSpeciesId] = useState('');
   const [weightKg, setWeightKg] = useState('');
+  const [totalFishPresented, setTotalFishPresented] = useState('');
   const [isCoinFish, setIsCoinFish] = useState(false);
   const [returnedAt, setReturnedAt] = useState('');
   const [applyManualPenalty, setApplyManualPenalty] = useState(false);
@@ -47,7 +49,10 @@ export function WeighingPage() {
         setTeamId(loadedTeams[0]?.id ?? '');
         setSpeciesId(loadedSpecies[0]?.id ?? '');
       })
-      .catch((error) => setFeedback(error instanceof Error ? error.message : 'Erro ao carregar dados.'));
+      .catch((error) => {
+        console.error('[Weighing] Erro ao carregar dados:', error);
+        setFeedback(formatSupabaseError(error, 'Erro ao carregar dados.'));
+      });
   }, []);
 
   const handleSave = async () => {
@@ -105,6 +110,7 @@ export function WeighingPage() {
         entries,
         {
           returnedAt,
+          totalFishPresented: totalFishPresented ? Number(totalFishPresented) : null,
           manualPenaltyMode,
           manualPenaltyValue: applyManualPenalty ? Number(manualPenaltyValue) : 0,
         },
@@ -119,12 +125,14 @@ export function WeighingPage() {
         time_bonus: score.temporalBonus,
         penalty: score.lowVolumePenalty + score.manualPenalty,
         total_score: score.total,
+        total_fish_presented: score.fishCountForPenalty,
         submitted_by: profile?.id ?? null,
         returned_at: returnedAt ? new Date(returnedAt).toISOString() : null,
         notes: notes || null,
       });
       setFeedback('Pesagem salva com sucesso.');
       setWeightKg('');
+      setTotalFishPresented('');
       setIsCoinFish(false);
       setReturnedAt('');
       setApplyManualPenalty(false);
@@ -132,7 +140,8 @@ export function WeighingPage() {
       setManualPenaltyReason('');
       setNotes('');
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Não foi possível salvar a pesagem.');
+      console.error('[Weighing] Erro ao salvar pesagem:', error);
+      setFeedback(formatSupabaseError(error, 'Não foi possível salvar a pesagem.'));
     } finally {
       setSaving(false);
     }
@@ -184,6 +193,19 @@ export function WeighingPage() {
           <label className="space-y-2">
             <span className="text-sm font-semibold text-graphite/70">Retorno oficial</span>
             <input className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 outline-none focus:border-gold" onChange={(event) => setReturnedAt(event.target.value)} type="datetime-local" value={returnedAt} />
+          </label>
+
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm font-semibold text-graphite/70">Total de peixes apresentados</span>
+            <input
+              className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 outline-none focus:border-gold"
+              inputMode="numeric"
+              min="0"
+              onChange={(event) => setTotalFishPresented(event.target.value)}
+              placeholder="Se vazio, usa a quantidade de pesagens lançadas"
+              type="number"
+              value={totalFishPresented}
+            />
           </label>
         </div>
 

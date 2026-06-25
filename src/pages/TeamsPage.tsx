@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card } from '../components/Card';
 import { PageHeader } from '../components/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
+import { formatSupabaseError } from '../services/errorMessages';
 import { canManageTeams } from '../services/permissions';
 import {
   createTeam,
@@ -77,7 +78,8 @@ export function TeamsPage() {
         setSelectedTeamId(loadedTeams[0].id);
       }
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Erro ao carregar equipes.');
+      console.error('[Teams] Erro ao carregar equipes:', loadError);
+      setError(formatSupabaseError(loadError, 'Erro ao carregar equipes.'));
     } finally {
       setLoading(false);
     }
@@ -146,7 +148,8 @@ export function TeamsPage() {
           phone: teamForm.phone || null,
           city: teamForm.city || null,
         });
-        setTeams((current) => current.map((team) => (team.id === updated.id ? updated : team)));
+        await loadTeams();
+        setSelectedTeamId(updated.id);
         setSuccess('Equipe atualizada com sucesso.');
       } else {
         const created = await createTeam({
@@ -156,13 +159,13 @@ export function TeamsPage() {
           phone: teamForm.phone || null,
           city: teamForm.city || null,
         });
-        setTeams((current) => [...current, created].sort((a, b) => a.name.localeCompare(b.name)));
-        setMembersByTeam((current) => ({ ...current, [created.id]: [] }));
+        await loadTeams();
         setSelectedTeamId(created.id);
         setSuccess('Equipe criada com sucesso.');
       }
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Não foi possível salvar a equipe.');
+      console.error('[Teams] Erro ao salvar equipe:', saveError);
+      setError(formatSupabaseError(saveError, 'Erro ao salvar equipe. Verifique se o usuário possui role admin ou commission.'));
     } finally {
       setSaving(false);
     }
@@ -178,18 +181,14 @@ export function TeamsPage() {
     setSuccess('');
     try {
       await deleteTeam(teamId);
-      setTeams((current) => current.filter((team) => team.id !== teamId));
-      setMembersByTeam((current) => {
-        const next = { ...current };
-        delete next[teamId];
-        return next;
-      });
+      await loadTeams();
       if (selectedTeamId === teamId) {
         startNewTeam();
       }
       setSuccess('Equipe excluída.');
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : 'Não foi possível excluir a equipe.');
+      console.error('[Teams] Erro ao excluir equipe:', deleteError);
+      setError(formatSupabaseError(deleteError, 'Não foi possível excluir a equipe.'));
     } finally {
       setSaving(false);
     }
@@ -242,7 +241,8 @@ export function TeamsPage() {
       setMemberForm(emptyMemberForm);
       await refreshMembers(selectedTeamId);
     } catch (memberError) {
-      setError(memberError instanceof Error ? memberError.message : 'Não foi possível salvar integrante.');
+      console.error('[Teams] Erro ao salvar integrante:', memberError);
+      setError(formatSupabaseError(memberError, 'Não foi possível salvar integrante.'));
     } finally {
       setSaving(false);
     }
@@ -272,7 +272,8 @@ export function TeamsPage() {
       }
       setSuccess('Integrante removido.');
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : 'Não foi possível remover integrante.');
+      console.error('[Teams] Erro ao remover integrante:', deleteError);
+      setError(formatSupabaseError(deleteError, 'Não foi possível remover integrante.'));
     } finally {
       setSaving(false);
     }

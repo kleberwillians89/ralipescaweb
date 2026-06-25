@@ -2,6 +2,7 @@ import { Scale, Waves } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Card } from '../components/Card';
 import { PageHeader } from '../components/PageHeader';
+import { formatSupabaseError } from '../services/errorMessages';
 import { getActiveSpecies } from '../services/speciesService';
 import type { Species } from '../types';
 
@@ -15,7 +16,7 @@ export function SpeciesPage() {
       .then(setSpecies)
       .catch((error) => {
         console.error('[Rali Noronha] Erro ao carregar espécies:', error);
-        setError(error instanceof Error ? error.message : 'Erro ao carregar espécies.');
+        setError(formatSupabaseError(error, 'Erro ao carregar espécies.'));
       })
       .finally(() => setLoading(false));
   }, []);

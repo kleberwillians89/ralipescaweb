@@ -45,4 +45,5 @@ export type RankingTeam = {
   biggestFishSpecies?: string | null;
   returnedAt?: string | null;
   grossWeightTotalKg?: number | null;
+  totalFishPresented?: number | null;
 };

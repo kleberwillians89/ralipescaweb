@@ -6,9 +6,17 @@ export const createTeam = async (payload: Pick<Team, 'name'> & Partial<Team>): P
     throw new Error('Supabase não configurado.');
   }
 
+  const insertPayload = {
+    name: payload.name,
+    boat_name: payload.boat_name ?? null,
+    captain_name: payload.captain_name ?? null,
+    phone: payload.phone ?? null,
+    city: payload.city ?? null,
+  };
+
   const { data, error } = await supabase
     .from('teams')
-    .insert(payload)
+    .insert(insertPayload)
     .select('*')
     .single();
   if (error) {
@@ -68,7 +76,15 @@ export const updateTeam = async (teamId: string, updates: Partial<Team>): Promis
     throw new Error('Supabase não configurado.');
   }
 
-  const { data, error } = await supabase.from('teams').update(updates).eq('id', teamId).select('*').single();
+  const updatePayload = {
+    ...(updates.name !== undefined ? { name: updates.name } : {}),
+    ...(updates.boat_name !== undefined ? { boat_name: updates.boat_name } : {}),
+    ...(updates.captain_name !== undefined ? { captain_name: updates.captain_name } : {}),
+    ...(updates.phone !== undefined ? { phone: updates.phone } : {}),
+    ...(updates.city !== undefined ? { city: updates.city } : {}),
+  };
+
+  const { data, error } = await supabase.from('teams').update(updatePayload).eq('id', teamId).select('*').single();
   if (error) {
     throw error;
   }

@@ -144,7 +144,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           options: {
             data: {
               full_name: profileData?.full_name ?? '',
-              role: profileData?.role ?? 'participant',
             },
           },
         });

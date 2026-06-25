@@ -2,6 +2,7 @@ import { Trophy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Card } from '../components/Card';
 import { PageHeader } from '../components/PageHeader';
+import { formatSupabaseError } from '../services/errorMessages';
 import { getRanking, subscribeToRanking, unsubscribe } from '../services/rankingService';
 import type { RankingTeam } from '../types';
 
@@ -21,7 +22,7 @@ export function RankingPage() {
       })
       .catch((error) => {
         console.error('[Rali Noronha] Erro ao carregar ranking:', error);
-        setError(error instanceof Error ? error.message : 'Erro ao carregar ranking.');
+        setError(formatSupabaseError(error, 'Erro ao carregar ranking.'));
       })
       .finally(() => {
         if (mounted) {
@@ -67,6 +68,7 @@ export function RankingPage() {
                 <div className="mt-2 grid gap-1 text-sm text-graphite/70 sm:grid-cols-2">
                   <p className="min-w-0 truncate">Embarcação: {team.boatName ?? team.captain}</p>
                   <p>{team.fishCount} peixes válidos</p>
+                  <p>Apresentados: {team.totalFishPresented ?? team.fishCount}</p>
                   <p className="sm:col-span-2">
                     Maior peixe: {team.biggestFishSpecies ?? 'Não informado'}
                     {team.biggestFishWeight ? ` · ${team.biggestFishWeight.toLocaleString('pt-BR')} kg` : ''}

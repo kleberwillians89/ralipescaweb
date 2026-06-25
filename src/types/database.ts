@@ -70,6 +70,7 @@ export type ScoreSubmission = {
   time_bonus: number;
   penalty: number;
   total_score: number;
+  total_fish_presented: number | null;
   submitted_by: string | null;
   returned_at: string | null;
   notes: string | null;
@@ -101,6 +102,7 @@ export type RankingRow = {
   biggest_fish_weight: number | null;
   biggest_fish_species: string | null;
   gross_weight_total_kg?: number | null;
+  total_fish_presented?: number | null;
   valid_catches_count: number;
   returned_at: string | null;
   position: number;
