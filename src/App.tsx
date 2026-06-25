@@ -9,6 +9,7 @@ import { RankingPage } from './pages/RankingPage';
 import { RulesPage } from './pages/RulesPage';
 import { SplashScreen } from './pages/SplashScreen';
 import { SpeciesPage } from './pages/SpeciesPage';
+import { TeamsPage } from './pages/TeamsPage';
 import { WeighingPage } from './pages/WeighingPage';
 import type { PageKey } from './types';
 import { Card } from './components/Card';
@@ -59,7 +60,7 @@ function AppContent() {
     species: <SpeciesPage />,
     rules: <RulesPage />,
     ranking: <RankingPage />,
-    team: <ComingSoonPage title="Minha Equipe" description="Área preparada para cadastro de tripulação, capitão, embarcação e validação de participação." />,
+    team: <TeamsPage />,
     settings: <ComingSoonPage title="Configurações" description="Preferências do aplicativo, conta, notificações e futura conexão com Supabase." />,
     profile: <ProfilePage />,
     weighing: <WeighingPage />,

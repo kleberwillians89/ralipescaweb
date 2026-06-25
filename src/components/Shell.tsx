@@ -11,7 +11,7 @@ const navItems: NavItem[] = [
   { key: 'ranking', label: 'Ranking', icon: Trophy },
   { key: 'rules', label: 'Regulamento', icon: ListChecks },
   { key: 'profile', label: 'Perfil', icon: UserRound },
-  { key: 'team', label: 'Equipe', icon: Users },
+  { key: 'team', label: 'Equipes', icon: Users },
   { key: 'weighing', label: 'Pesagem', icon: Scale },
   { key: 'settings', label: 'Ajustes', icon: Settings },
 ];

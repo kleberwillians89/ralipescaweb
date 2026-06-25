@@ -14,6 +14,9 @@ export type Team = {
   id: string;
   name: string;
   boat_name: string | null;
+  captain_name: string | null;
+  phone: string | null;
+  city: string | null;
   captain_profile_id: string | null;
   created_at: string;
   updated_at: string;
@@ -22,8 +25,12 @@ export type Team = {
 export type TeamMember = {
   id: string;
   team_id: string;
-  profile_id: string;
-  member_role: 'captain' | 'angler' | 'guest';
+  profile_id: string | null;
+  name: string | null;
+  phone: string | null;
+  role: string | null;
+  member_role: 'captain' | 'angler' | 'guest' | string;
+  notes: string | null;
   created_at: string;
 };
 
@@ -34,6 +41,7 @@ export type Species = {
   multiplier: number;
   fishing_method: string;
   minimum_weight_kg: number;
+  coin_minimum_weight_kg: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -48,6 +56,7 @@ export type Catch = {
   caught_at: string | null;
   returned_at: string | null;
   created_by: string | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -62,6 +71,20 @@ export type ScoreSubmission = {
   penalty: number;
   total_score: number;
   submitted_by: string | null;
+  returned_at: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type Penalty = {
+  id: string;
+  team_id: string;
+  type: string;
+  mode: 'percent' | 'points' | string;
+  value: number;
+  reason: string | null;
+  notes: string | null;
+  created_by: string | null;
   created_at: string;
 };
 
@@ -99,7 +122,7 @@ export type Database = {
       };
       team_members: {
         Row: TeamMember;
-        Insert: Partial<TeamMember> & Pick<TeamMember, 'team_id' | 'profile_id'>;
+        Insert: Partial<TeamMember> & Pick<TeamMember, 'team_id'>;
         Update: Partial<TeamMember>;
         Relationships: [];
       };
@@ -119,6 +142,12 @@ export type Database = {
         Row: ScoreSubmission;
         Insert: Partial<ScoreSubmission> & Pick<ScoreSubmission, 'team_id' | 'total_score'>;
         Update: Partial<ScoreSubmission>;
+        Relationships: [];
+      };
+      penalties: {
+        Row: Penalty;
+        Insert: Partial<Penalty> & Pick<Penalty, 'team_id' | 'mode' | 'value'>;
+        Update: Partial<Penalty>;
         Relationships: [];
       };
     };

@@ -10,6 +10,7 @@ const mapSpecies = (item: DbSpecies): AppSpecies => ({
   multiplier: Number(item.multiplier),
   fishingMethod: item.fishing_method,
   minimumWeightKg: Number(item.minimum_weight_kg),
+  coinMinimumWeightKg: item.coin_minimum_weight_kg == null ? null : Number(item.coin_minimum_weight_kg),
 });
 
 export const getSpecies = async (): Promise<AppSpecies[]> => {

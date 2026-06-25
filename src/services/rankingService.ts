@@ -11,12 +11,18 @@ const mapRankingRow = (row: RankingRow): RankingTeam => ({
   captain: row.boat_name ?? 'Equipe',
   boatName: row.boat_name,
   score: Number(row.total_score),
+  baseScore: Number(row.base_score),
+  coinBonus: Number(row.coin_bonus),
+  schoolBonus: Number(row.school_bonus),
+  timeBonus: Number(row.time_bonus),
+  penalty: Number(row.penalty),
   fishCount: row.valid_catches_count,
   highlight: row.biggest_fish_species
     ? `Maior peixe: ${row.biggest_fish_species} (${Number(row.biggest_fish_weight ?? 0).toLocaleString('pt-BR')} kg)`
     : 'Pesagens validadas',
   biggestFishWeight: row.biggest_fish_weight,
   biggestFishSpecies: row.biggest_fish_species,
+  returnedAt: row.returned_at,
 });
 
 export const getRanking = async (): Promise<RankingTeam[]> => {

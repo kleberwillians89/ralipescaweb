@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react';
 import { Card } from '../components/Card';
 import { PageHeader } from '../components/PageHeader';
 import { createCatch } from '../services/catchService';
+import { getCatchesByTeam } from '../services/catchService';
+import { createPenalty } from '../services/penaltyService';
+import { calculateScore } from '../services/scoring';
+import { createScoreSubmission } from '../services/scoreSubmissionService';
 import { getActiveSpecies } from '../services/speciesService';
 import { getTeams } from '../services/teamService';
 import { isSupabaseConfigured } from '../services/supabaseClient';
@@ -19,6 +23,11 @@ export function WeighingPage() {
   const [weightKg, setWeightKg] = useState('');
   const [isCoinFish, setIsCoinFish] = useState(false);
   const [returnedAt, setReturnedAt] = useState('');
+  const [applyManualPenalty, setApplyManualPenalty] = useState(false);
+  const [manualPenaltyMode, setManualPenaltyMode] = useState<'percent' | 'points'>('percent');
+  const [manualPenaltyValue, setManualPenaltyValue] = useState('');
+  const [manualPenaltyReason, setManualPenaltyReason] = useState('');
+  const [notes, setNotes] = useState('');
   const [feedback, setFeedback] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -55,18 +64,67 @@ export function WeighingPage() {
 
     setSaving(true);
     try {
-      await createCatch({
+      const savedCatch = await createCatch({
         team_id: teamId,
         species_id: speciesId,
         weight_kg: Number(weightKg),
         is_coin_fish: isCoinFish,
         returned_at: returnedAt ? new Date(returnedAt).toISOString() : null,
         created_by: profile?.id ?? null,
+        notes: notes || null,
+      });
+
+      if (applyManualPenalty && Number(manualPenaltyValue) > 0) {
+        await createPenalty({
+          team_id: teamId,
+          mode: manualPenaltyMode,
+          value: Number(manualPenaltyValue),
+          reason: manualPenaltyReason || null,
+          notes: notes || null,
+          created_by: profile?.user_id ?? null,
+        });
+      }
+
+      const teamCatches = await getCatchesByTeam(teamId);
+      const entries = teamCatches.map((item) => ({
+        id: item.id,
+        speciesId: item.species_id,
+        weightKg: Number(item.weight_kg),
+      }));
+      if (!teamCatches.some((item) => item.id === savedCatch.id)) {
+        entries.push({ id: savedCatch.id, speciesId: savedCatch.species_id, weightKg: Number(savedCatch.weight_kg) });
+      }
+      const score = calculateScore(
+        entries,
+        {
+          hasCoinFish: teamCatches.some((item) => item.is_coin_fish) || savedCatch.is_coin_fish,
+          hasTemporalBonus: Boolean(returnedAt),
+          manualPenaltyMode,
+          manualPenaltyValue: applyManualPenalty ? Number(manualPenaltyValue) : 0,
+        },
+        species,
+      );
+
+      await createScoreSubmission({
+        team_id: teamId,
+        base_score: score.baseScore,
+        coin_bonus: score.coinFishBonus,
+        school_bonus: score.schoolBonus,
+        time_bonus: score.temporalBonus,
+        penalty: score.lowVolumePenalty + score.manualPenalty,
+        total_score: score.total,
+        submitted_by: profile?.id ?? null,
+        returned_at: returnedAt ? new Date(returnedAt).toISOString() : null,
+        notes: notes || null,
       });
       setFeedback('Pesagem salva com sucesso.');
       setWeightKg('');
       setIsCoinFish(false);
       setReturnedAt('');
+      setApplyManualPenalty(false);
+      setManualPenaltyValue('');
+      setManualPenaltyReason('');
+      setNotes('');
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : 'Não foi possível salvar a pesagem.');
     } finally {
@@ -123,6 +181,30 @@ export function WeighingPage() {
             <span className="text-sm text-graphite/70">Marca a captura como bônus especial.</span>
           </span>
           <input checked={isCoinFish} className="h-5 w-5 accent-gold" onChange={(event) => setIsCoinFish(event.target.checked)} type="checkbox" />
+        </label>
+
+        <label className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-sand/70 p-4">
+          <span>
+            <span className="block font-bold text-sea">Penalidade manual</span>
+            <span className="text-sm text-graphite/70">Aplicar na submissão oficial</span>
+          </span>
+          <input checked={applyManualPenalty} className="h-5 w-5 accent-gold" onChange={(event) => setApplyManualPenalty(event.target.checked)} type="checkbox" />
+        </label>
+
+        {applyManualPenalty ? (
+          <div className="mt-4 grid gap-4 rounded-2xl border border-sand/70 p-4 md:grid-cols-2">
+            <select className="min-h-12 rounded-2xl border border-sand bg-white px-4 py-3" onChange={(event) => setManualPenaltyMode(event.target.value as 'percent' | 'points')} value={manualPenaltyMode}>
+              <option value="percent">Percentual</option>
+              <option value="points">Pontos</option>
+            </select>
+            <input className="min-h-12 rounded-2xl border border-sand bg-white px-4 py-3" min="0" onChange={(event) => setManualPenaltyValue(event.target.value)} placeholder="Valor" type="number" value={manualPenaltyValue} />
+            <input className="min-h-12 rounded-2xl border border-sand bg-white px-4 py-3 md:col-span-2" onChange={(event) => setManualPenaltyReason(event.target.value)} placeholder="Motivo da penalidade" value={manualPenaltyReason} />
+          </div>
+        ) : null}
+
+        <label className="mt-4 block space-y-2">
+          <span className="text-sm font-semibold text-graphite/70">Observação</span>
+          <textarea className="min-h-24 w-full rounded-2xl border border-sand bg-white px-4 py-3 outline-none focus:border-gold" onChange={(event) => setNotes(event.target.value)} value={notes} />
         </label>
 
         <div className="sticky bottom-24 z-20 mt-6 grid gap-3 rounded-[24px] border border-sand/60 bg-white/94 p-3 shadow-soft backdrop-blur sm:static sm:flex sm:flex-wrap sm:items-center sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">

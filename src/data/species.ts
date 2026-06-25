@@ -8,6 +8,7 @@ export const species: Species[] = [
     multiplier: 2.2,
     fishingMethod: 'Corrico oceânico',
     minimumWeightKg: 3,
+    coinMinimumWeightKg: 5,
   },
   {
     id: 'atum',
@@ -16,6 +17,7 @@ export const species: Species[] = [
     multiplier: 2,
     fishingMethod: 'Isca natural embarcada',
     minimumWeightKg: 4,
+    coinMinimumWeightKg: 6,
   },
   {
     id: 'cavala',

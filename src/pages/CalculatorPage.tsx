@@ -5,26 +5,50 @@ import { PageHeader } from '../components/PageHeader';
 import { species as demoSpecies } from '../data/species';
 import { calculateScore, createCatchEntry } from '../services/scoring';
 import { getActiveSpecies } from '../services/speciesService';
+import { getTeams } from '../services/teamService';
 import type { CatchEntry, Species } from '../types';
+import type { Team } from '../types/database';
 
 const formatScore = (value: number) => value.toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 
 export function CalculatorPage() {
   const [species, setSpecies] = useState<Species[]>(demoSpecies);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamId, setTeamId] = useState('');
   const [entries, setEntries] = useState<CatchEntry[]>([createCatchEntry(), createCatchEntry(), createCatchEntry()]);
   const [hasCoinFish, setHasCoinFish] = useState(false);
   const [hasTemporalBonus, setHasTemporalBonus] = useState(false);
+  const [applyManualPenalty, setApplyManualPenalty] = useState(false);
+  const [manualPenaltyMode, setManualPenaltyMode] = useState<'percent' | 'points'>('percent');
+  const [manualPenaltyValue, setManualPenaltyValue] = useState('');
+  const [manualPenaltyReason, setManualPenaltyReason] = useState('');
+  const [manualPenaltyNotes, setManualPenaltyNotes] = useState('');
 
   useEffect(() => {
-    getActiveSpecies()
-      .then((loadedSpecies) => {
+    Promise.all([getActiveSpecies(), getTeams()])
+      .then(([loadedSpecies, loadedTeams]) => {
         setSpecies(loadedSpecies);
+        setTeams(loadedTeams);
+        setTeamId(loadedTeams[0]?.id ?? '');
         setEntries((current) => current.map((entry) => ({ ...entry, speciesId: loadedSpecies.some((item) => item.id === entry.speciesId) ? entry.speciesId : loadedSpecies[0]?.id ?? entry.speciesId })));
       })
-      .catch((error) => console.error('[Rali Noronha] Erro ao carregar espécies:', error));
+      .catch((error) => console.error('[Rali Noronha] Erro ao carregar dados da calculadora:', error));
   }, []);
 
-  const score = useMemo(() => calculateScore(entries, { hasCoinFish, hasTemporalBonus }, species), [entries, hasCoinFish, hasTemporalBonus, species]);
+  const score = useMemo(
+    () =>
+      calculateScore(
+        entries,
+        {
+          hasCoinFish,
+          hasTemporalBonus,
+          manualPenaltyMode,
+          manualPenaltyValue: applyManualPenalty ? Number(manualPenaltyValue) : 0,
+        },
+        species,
+      ),
+    [applyManualPenalty, entries, hasCoinFish, hasTemporalBonus, manualPenaltyMode, manualPenaltyValue, species],
+  );
   const canAddFish = entries.length < 6;
 
   const updateEntry = (id: string, changes: Partial<CatchEntry>) => {
@@ -42,6 +66,25 @@ export function CalculatorPage() {
         title="Pontuação em tempo real"
         description="Informe até 6 peixes, selecione a espécie e aplique os bônus do regulamento. O total é recalculado automaticamente."
       />
+
+      <Card className="mb-5">
+        <label className="space-y-2">
+          <span className="text-sm font-semibold text-graphite/70">Selecionar equipe</span>
+          <select
+            className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 text-base outline-none transition focus:border-gold"
+            onChange={(event) => setTeamId(event.target.value)}
+            required
+            value={teamId}
+          >
+            <option value="">Selecione uma equipe</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}{team.boat_name ? ` - ${team.boat_name}` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+      </Card>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-4 lg:order-1">
@@ -141,6 +184,26 @@ export function CalculatorPage() {
                 </span>
                 <input checked={hasTemporalBonus} className="h-5 w-5 accent-gold" onChange={(event) => setHasTemporalBonus(event.target.checked)} type="checkbox" />
               </label>
+              <label className="flex min-w-0 items-center justify-between gap-4 rounded-2xl border border-sand/70 p-4 transition hover:border-gold">
+                <span className="min-w-0">
+                  <span className="block font-bold text-sea">Penalidade manual</span>
+                  <span className="text-sm text-graphite/70">Percentual ou pontos fixos</span>
+                </span>
+                <input checked={applyManualPenalty} className="h-5 w-5 accent-gold" onChange={(event) => setApplyManualPenalty(event.target.checked)} type="checkbox" />
+              </label>
+              {applyManualPenalty ? (
+                <div className="grid gap-3 rounded-2xl border border-sand/70 p-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <select className="min-h-12 rounded-2xl border border-sand bg-white px-4 py-3" onChange={(event) => setManualPenaltyMode(event.target.value as 'percent' | 'points')} value={manualPenaltyMode}>
+                      <option value="percent">Percentual</option>
+                      <option value="points">Pontos</option>
+                    </select>
+                    <input className="min-h-12 rounded-2xl border border-sand bg-white px-4 py-3" min="0" onChange={(event) => setManualPenaltyValue(event.target.value)} placeholder={manualPenaltyMode === 'percent' ? '10%' : '10 pontos'} type="number" value={manualPenaltyValue} />
+                  </div>
+                  <input className="min-h-12 rounded-2xl border border-sand bg-white px-4 py-3" onChange={(event) => setManualPenaltyReason(event.target.value)} placeholder="Motivo" value={manualPenaltyReason} />
+                  <input className="min-h-12 rounded-2xl border border-sand bg-white px-4 py-3" onChange={(event) => setManualPenaltyNotes(event.target.value)} placeholder="Observação" value={manualPenaltyNotes} />
+                </div>
+              ) : null}
             </div>
           </Card>
 
@@ -150,7 +213,8 @@ export function CalculatorPage() {
               <div className="flex justify-between gap-4"><dt className="min-w-0">Peixe da Moeda</dt><dd className="shrink-0 font-bold text-sea">{formatScore(score.coinFishBonus)}</dd></div>
               <div className="flex justify-between gap-4"><dt className="min-w-0">Bônus Cardume</dt><dd className="shrink-0 font-bold text-sea">{formatScore(score.schoolBonus)}</dd></div>
               <div className="flex justify-between gap-4"><dt className="min-w-0">Bônus Temporal</dt><dd className="shrink-0 font-bold text-sea">{formatScore(score.temporalBonus)}</dd></div>
-              <div className="flex justify-between gap-4 text-gold"><dt className="min-w-0">Penalidade</dt><dd className="shrink-0 font-bold">-{formatScore(score.lowVolumePenalty)}</dd></div>
+              <div className="flex justify-between gap-4 text-gold"><dt className="min-w-0">Penalidade automática</dt><dd className="shrink-0 font-bold">-{formatScore(score.lowVolumePenalty)}</dd></div>
+              <div className="flex justify-between gap-4 text-gold"><dt className="min-w-0">Penalidade manual</dt><dd className="shrink-0 font-bold">-{formatScore(score.manualPenalty)}</dd></div>
             </dl>
           </Card>
         </aside>

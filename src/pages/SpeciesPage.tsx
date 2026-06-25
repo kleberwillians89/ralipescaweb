@@ -8,11 +8,15 @@ import type { Species } from '../types';
 export function SpeciesPage() {
   const [species, setSpecies] = useState<Species[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     getActiveSpecies()
       .then(setSpecies)
-      .catch((error) => console.error('[Rali Noronha] Erro ao carregar espécies:', error))
+      .catch((error) => {
+        console.error('[Rali Noronha] Erro ao carregar espécies:', error);
+        setError(error instanceof Error ? error.message : 'Erro ao carregar espécies.');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -21,10 +25,12 @@ export function SpeciesPage() {
       <PageHeader
         eyebrow="Tabela técnica"
         title="Espécies do rali"
-        description="Dados carregados de um arquivo TypeScript com nome, categoria, multiplicador, método de pesca e peso mínimo."
+        description="Espécies oficiais carregadas da tabela species, com multiplicadores e critérios de pesagem."
       />
 
       {loading ? <p className="text-sm font-semibold text-graphite/70">Carregando espécies...</p> : null}
+      {error ? <p className="rounded-2xl bg-sand/45 px-4 py-3 text-sm font-semibold text-graphite/75">{error}</p> : null}
+      {!loading && !error && species.length === 0 ? <p className="rounded-2xl bg-sand/45 px-4 py-3 text-sm font-semibold text-graphite/75">Nenhuma espécie ativa cadastrada.</p> : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {species.map((item) => (
@@ -45,6 +51,12 @@ export function SpeciesPage() {
                 <Scale className="mt-0.5 text-turquoise" size={18} strokeWidth={1.7} />
                 <span>Peso mínimo: {item.minimumWeightKg.toLocaleString('pt-BR')} kg</span>
               </p>
+              {item.coinMinimumWeightKg ? (
+                <p className="flex gap-3">
+                  <Scale className="mt-0.5 text-gold" size={18} strokeWidth={1.7} />
+                  <span>Peso mínimo Peixe da Moeda: {item.coinMinimumWeightKg.toLocaleString('pt-BR')} kg</span>
+                </p>
+              ) : null}
             </div>
           </Card>
         ))}

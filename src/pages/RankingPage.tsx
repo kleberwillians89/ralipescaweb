@@ -8,6 +8,7 @@ import type { RankingTeam } from '../types';
 export function RankingPage() {
   const [rankingTeams, setRankingTeams] = useState<RankingTeam[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -18,7 +19,10 @@ export function RankingPage() {
           setRankingTeams(ranking);
         }
       })
-      .catch((error) => console.error('[Rali Noronha] Erro ao carregar ranking:', error))
+      .catch((error) => {
+        console.error('[Rali Noronha] Erro ao carregar ranking:', error);
+        setError(error instanceof Error ? error.message : 'Erro ao carregar ranking.');
+      })
       .finally(() => {
         if (mounted) {
           setLoading(false);
@@ -46,6 +50,10 @@ export function RankingPage() {
       />
 
       {loading ? <p className="text-sm font-semibold text-graphite/70">Atualizando ranking...</p> : null}
+      {error ? <p className="rounded-2xl bg-sand/45 px-4 py-3 text-sm font-semibold text-graphite/75">{error}</p> : null}
+      {!loading && !error && rankingTeams.length === 0 ? (
+        <p className="rounded-2xl bg-sand/45 px-4 py-3 text-sm font-semibold text-graphite/75">Nenhuma equipe ou pesagem encontrada no ranking.</p>
+      ) : null}
 
       <div className="space-y-3">
         {rankingTeams.map((team) => (
@@ -63,6 +71,12 @@ export function RankingPage() {
                     Maior peixe: {team.biggestFishSpecies ?? 'Não informado'}
                     {team.biggestFishWeight ? ` · ${team.biggestFishWeight.toLocaleString('pt-BR')} kg` : ''}
                   </p>
+                  <p>Base: {(team.baseScore ?? 0).toLocaleString('pt-BR')}</p>
+                  <p>Bônus moeda: {(team.coinBonus ?? 0).toLocaleString('pt-BR')}</p>
+                  <p>Bônus cardume: {(team.schoolBonus ?? 0).toLocaleString('pt-BR')}</p>
+                  <p>Bônus temporal: {(team.timeBonus ?? 0).toLocaleString('pt-BR')}</p>
+                  <p>Penalidade: {(team.penalty ?? 0).toLocaleString('pt-BR')}</p>
+                  <p>Retorno: {team.returnedAt ? new Date(team.returnedAt).toLocaleString('pt-BR') : 'Não informado'}</p>
                 </div>
               </div>
               <div className="rounded-2xl bg-sea px-4 py-3 text-left text-white sm:min-w-32 sm:text-right">

@@ -17,6 +17,7 @@ export type Species = {
   multiplier: number;
   fishingMethod: string;
   minimumWeightKg: number;
+  coinMinimumWeightKg?: number | null;
 };
 
 export type CatchEntry = {
@@ -31,8 +32,14 @@ export type RankingTeam = {
   captain: string;
   boatName?: string | null;
   score: number;
+  baseScore?: number;
+  coinBonus?: number;
+  schoolBonus?: number;
+  timeBonus?: number;
+  penalty?: number;
   fishCount: number;
   highlight: string;
   biggestFishWeight?: number | null;
   biggestFishSpecies?: string | null;
+  returnedAt?: string | null;
 };

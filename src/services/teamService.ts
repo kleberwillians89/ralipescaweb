@@ -1,4 +1,4 @@
-import type { Team } from '../types/database';
+import type { Team, TeamMember } from '../types/database';
 import { getCurrentProfile } from './profileService';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 
@@ -18,7 +18,9 @@ export const createTeam = async (payload: Pick<Team, 'name'> & Partial<Team>): P
   }
 
   if (profile) {
-    const { error: memberError } = await supabase.from('team_members').insert({ team_id: data.id, profile_id: profile.id, member_role: 'captain' });
+    const { error: memberError } = await supabase
+      .from('team_members')
+      .insert({ team_id: data.id, profile_id: profile.id, member_role: 'captain', name: profile.full_name });
     if (memberError) {
       throw memberError;
     }
@@ -71,6 +73,17 @@ export const updateTeam = async (teamId: string, updates: Partial<Team>): Promis
   return data;
 };
 
+export const deleteTeam = async (teamId: string): Promise<void> => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase não configurado.');
+  }
+
+  const { error } = await supabase.from('teams').delete().eq('id', teamId);
+  if (error) {
+    throw error;
+  }
+};
+
 export const getTeams = async (): Promise<Team[]> => {
   if (!isSupabaseConfigured || !supabase) {
     return [];
@@ -82,4 +95,54 @@ export const getTeams = async (): Promise<Team[]> => {
   }
 
   return data;
+};
+
+export const getTeamMembers = async (teamId: string): Promise<TeamMember[]> => {
+  if (!isSupabaseConfigured || !supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase.from('team_members').select('*').eq('team_id', teamId).order('created_at');
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
+
+export const createTeamMember = async (payload: Pick<TeamMember, 'team_id'> & Partial<TeamMember>): Promise<TeamMember> => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase não configurado.');
+  }
+
+  const { data, error } = await supabase.from('team_members').insert(payload).select('*').single();
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
+
+export const updateTeamMember = async (memberId: string, updates: Partial<TeamMember>): Promise<TeamMember> => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase não configurado.');
+  }
+
+  const { data, error } = await supabase.from('team_members').update(updates).eq('id', memberId).select('*').single();
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
+
+export const deleteTeamMember = async (memberId: string): Promise<void> => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase não configurado.');
+  }
+
+  const { error } = await supabase.from('team_members').delete().eq('id', memberId);
+  if (error) {
+    throw error;
+  }
 };
