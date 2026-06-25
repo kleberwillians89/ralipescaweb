@@ -1,5 +1,4 @@
 import type { Team, TeamMember } from '../types/database';
-import { getCurrentProfile } from './profileService';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 
 export const createTeam = async (payload: Pick<Team, 'name'> & Partial<Team>): Promise<Team> => {
@@ -7,23 +6,13 @@ export const createTeam = async (payload: Pick<Team, 'name'> & Partial<Team>): P
     throw new Error('Supabase não configurado.');
   }
 
-  const profile = await getCurrentProfile();
   const { data, error } = await supabase
     .from('teams')
-    .insert({ ...payload, captain_profile_id: payload.captain_profile_id ?? profile?.id ?? null })
+    .insert(payload)
     .select('*')
     .single();
   if (error) {
     throw error;
-  }
-
-  if (profile) {
-    const { error: memberError } = await supabase
-      .from('team_members')
-      .insert({ team_id: data.id, profile_id: profile.id, member_role: 'captain', name: profile.full_name });
-    if (memberError) {
-      throw memberError;
-    }
   }
 
   return data;
@@ -34,6 +23,7 @@ export const getMyTeam = async (): Promise<Team | null> => {
     return null;
   }
 
+  const { getCurrentProfile } = await import('./profileService');
   const profile = await getCurrentProfile();
   if (!profile) {
     return null;
@@ -53,6 +43,19 @@ export const getMyTeam = async (): Promise<Team | null> => {
   }
 
   const { data, error } = await supabase.from('teams').select('*').eq('id', membership.team_id).maybeSingle();
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
+
+export const getTeamById = async (id: string): Promise<Team | null> => {
+  if (!isSupabaseConfigured || !supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase.from('teams').select('*').eq('id', id).maybeSingle();
   if (error) {
     throw error;
   }

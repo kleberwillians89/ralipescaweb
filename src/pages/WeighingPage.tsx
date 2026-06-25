@@ -141,10 +141,16 @@ export function WeighingPage() {
       />
 
       <Card className="max-w-3xl overflow-hidden">
+        {teams.length === 0 ? (
+          <p className="mb-4 rounded-2xl bg-sand/45 px-4 py-3 text-sm font-semibold text-graphite/75">
+            Nenhuma equipe cadastrada. A comissão precisa cadastrar uma equipe antes da pesagem.
+          </p>
+        ) : null}
         <div className="grid min-w-0 gap-4 md:grid-cols-2">
           <label className="space-y-2">
             <span className="text-sm font-semibold text-graphite/70">Equipe</span>
             <select className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 outline-none focus:border-gold" onChange={(event) => setTeamId(event.target.value)} value={teamId}>
+              <option value="">Selecione uma equipe</option>
               {teams.map((team) => (
                 <option key={team.id} value={team.id}>
                   {team.name}{team.boat_name ? ` - ${team.boat_name}` : ''}
@@ -208,7 +214,7 @@ export function WeighingPage() {
         </label>
 
         <div className="sticky bottom-24 z-20 mt-6 grid gap-3 rounded-[24px] border border-sand/60 bg-white/94 p-3 shadow-soft backdrop-blur sm:static sm:flex sm:flex-wrap sm:items-center sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
-          <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-sea px-5 py-3 text-sm font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-turquoise disabled:opacity-60" disabled={saving} onClick={handleSave} type="button">
+          <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-sea px-5 py-3 text-sm font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-turquoise disabled:opacity-60" disabled={saving || !teamId} onClick={handleSave} type="button">
             <Save size={18} strokeWidth={1.8} />
             {saving ? 'Salvando...' : 'Salvar pesagem'}
           </button>

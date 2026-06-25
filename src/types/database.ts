@@ -26,6 +26,7 @@ export type TeamMember = {
   id: string;
   team_id: string;
   profile_id: string | null;
+  member_name: string | null;
   name: string | null;
   phone: string | null;
   role: string | null;

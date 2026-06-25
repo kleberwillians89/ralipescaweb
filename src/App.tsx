@@ -36,12 +36,6 @@ function AppContent() {
 
   const isAuthenticated = Boolean(session || profile);
 
-  useEffect(() => {
-    if (profile && !canAccessPage(profile.role, activePage)) {
-      setActivePage('home');
-    }
-  }, [activePage, profile]);
-
   if (showSplash) {
     return <SplashScreen />;
   }
@@ -68,8 +62,19 @@ function AppContent() {
 
   return (
     <Shell activePage={activePage} onNavigate={setActivePage}>
-      {pages[activePage]}
+      {profile && !canAccessPage(profile.role, activePage) ? <PermissionDeniedPage /> : pages[activePage]}
     </Shell>
+  );
+}
+
+function PermissionDeniedPage() {
+  return (
+    <div>
+      <PageHeader eyebrow="Acesso restrito" title="Sem permissão" description="Você não tem permissão para gerenciar equipes." />
+      <Card>
+        <p className="text-base leading-7 text-graphite/75">Peça acesso à organização do Rali caso você faça parte da comissão.</p>
+      </Card>
+    </div>
   );
 }
 

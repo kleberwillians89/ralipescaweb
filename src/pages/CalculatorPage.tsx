@@ -68,6 +68,11 @@ export function CalculatorPage() {
       />
 
       <Card className="mb-5">
+        {teams.length === 0 ? (
+          <p className="mb-4 rounded-2xl bg-sand/45 px-4 py-3 text-sm font-semibold text-graphite/75">
+            Nenhuma equipe cadastrada. A comissão precisa cadastrar uma equipe antes da pesagem.
+          </p>
+        ) : null}
         <label className="space-y-2">
           <span className="text-sm font-semibold text-graphite/70">Selecionar equipe</span>
           <select
