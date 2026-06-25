@@ -10,7 +10,6 @@ const MAX_FISH = 6;
 
 export type ScoreOptions = {
   returnedAt?: string;
-  totalFishPresented?: number | null;
   manualPenaltyMode?: 'percent' | 'points';
   manualPenaltyValue?: number;
 };
@@ -36,6 +35,7 @@ export const createCatchEntry = (speciesId = demoSpecies[0].id): CatchEntry => (
   id: crypto.randomUUID(),
   speciesId,
   weightKg: 0,
+  quantity: 1,
 });
 
 const getSpecies = (entry: CatchEntry, availableSpecies: Species[]) =>
@@ -66,7 +66,15 @@ const getTemporalRate = (returnedAt?: string) => {
 };
 
 export const calculateScore = (entries: CatchEntry[], options: ScoreOptions, availableSpecies: Species[] = demoSpecies): ScoreBreakdown => {
-  const allValidEntries = entries.filter((entry) => entry.weightKg > 0);
+  const allValidEntries = entries
+    .filter((entry) => entry.weightKg > 0 && (entry.quantity ?? 1) > 0)
+    .flatMap((entry) =>
+      Array.from({ length: Math.max(1, Math.floor(entry.quantity ?? 1)) }, (_, index) => ({
+        ...entry,
+        id: `${entry.id}-${index}`,
+        quantity: 1,
+      })),
+    );
   const allValidEntriesWithSpecies = allValidEntries.map((entry) => ({
     entry,
     selectedSpecies: getSpecies(entry, availableSpecies),
@@ -98,8 +106,7 @@ export const calculateScore = (entries: CatchEntry[], options: ScoreOptions, ava
   const temporalRate = getTemporalRate(options.returnedAt);
   const temporalBonus = scoredEntriesWithSpecies.length > 0 ? baseScore * temporalRate : 0;
   const subtotal = baseScore + coinFishBonus + schoolBonus + temporalBonus;
-  const totalFishPresented = Number(options.totalFishPresented ?? 0);
-  const fishCountForPenalty = totalFishPresented > 0 ? totalFishPresented : allValidEntries.length;
+  const fishCountForPenalty = allValidEntries.length;
   const lowVolumePenalty = fishCountForPenalty > 0 && fishCountForPenalty < 3 ? subtotal * LOW_VOLUME_PENALTY_RATE : 0;
   const manualPenaltyValue = Number(options.manualPenaltyValue ?? 0);
   const manualPenalty =

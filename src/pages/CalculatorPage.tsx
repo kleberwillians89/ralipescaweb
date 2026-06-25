@@ -17,7 +17,6 @@ export function CalculatorPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamId, setTeamId] = useState('');
   const [entries, setEntries] = useState<CatchEntry[]>([createCatchEntry(), createCatchEntry(), createCatchEntry()]);
-  const [totalFishPresented, setTotalFishPresented] = useState('');
   const [returnedAt, setReturnedAt] = useState('');
   const [applyManualPenalty, setApplyManualPenalty] = useState(false);
   const [manualPenaltyMode, setManualPenaltyMode] = useState<'percent' | 'points'>('percent');
@@ -46,13 +45,12 @@ export function CalculatorPage() {
         entries,
         {
           returnedAt,
-          totalFishPresented: totalFishPresented ? Number(totalFishPresented) : null,
           manualPenaltyMode,
           manualPenaltyValue: applyManualPenalty ? Number(manualPenaltyValue) : 0,
         },
         species,
       ),
-    [applyManualPenalty, entries, manualPenaltyMode, manualPenaltyValue, returnedAt, species, totalFishPresented],
+    [applyManualPenalty, entries, manualPenaltyMode, manualPenaltyValue, returnedAt, species],
   );
   const canAddFish = entries.length < 12;
 
@@ -79,7 +77,7 @@ export function CalculatorPage() {
             Nenhuma equipe cadastrada. Cadastre uma equipe antes de calcular oficialmente.
           </p>
         ) : null}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4">
           <label className="space-y-2">
             <span className="text-sm font-semibold text-graphite/70">Equipe</span>
             <select
@@ -95,18 +93,6 @@ export function CalculatorPage() {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-semibold text-graphite/70">Total de peixes apresentados</span>
-            <input
-              className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 text-base outline-none transition focus:border-gold"
-              inputMode="numeric"
-              min="0"
-              onChange={(event) => setTotalFishPresented(event.target.value)}
-              placeholder="Usa peixes preenchidos se vazio"
-              type="number"
-              value={totalFishPresented}
-            />
           </label>
         </div>
       </Card>
@@ -129,7 +115,7 @@ export function CalculatorPage() {
                 </button>
               </div>
 
-              <div className="grid min-w-0 gap-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
+              <div className="grid min-w-0 gap-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)_minmax(0,0.55fr)]">
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-graphite/70">Espécie</span>
                   <select
@@ -156,6 +142,19 @@ export function CalculatorPage() {
                     step="0.1"
                     type="number"
                     value={entry.weightKg || ''}
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-graphite/70">Quantidade</span>
+                  <input
+                    className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 text-base outline-none transition focus:border-gold"
+                    inputMode="numeric"
+                    min="1"
+                    onChange={(event) => updateEntry(entry.id, { quantity: Math.max(1, Number(event.target.value) || 1) })}
+                    step="1"
+                    type="number"
+                    value={entry.quantity || 1}
                   />
                 </label>
               </div>
@@ -189,7 +188,6 @@ export function CalculatorPage() {
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-sand bg-white px-5 py-3 text-sm font-bold text-sea transition hover:-translate-y-0.5 hover:border-gold"
               onClick={() => {
                 setEntries([createCatchEntry(species[0]?.id), createCatchEntry(species[0]?.id), createCatchEntry(species[0]?.id)]);
-                setTotalFishPresented('');
                 setReturnedAt('');
               }}
               type="button"

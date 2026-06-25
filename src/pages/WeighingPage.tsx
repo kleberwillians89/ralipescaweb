@@ -22,7 +22,7 @@ export function WeighingPage() {
   const [teamId, setTeamId] = useState('');
   const [speciesId, setSpeciesId] = useState('');
   const [weightKg, setWeightKg] = useState('');
-  const [totalFishPresented, setTotalFishPresented] = useState('');
+  const [quantity, setQuantity] = useState('1');
   const [isCoinFish, setIsCoinFish] = useState(false);
   const [returnedAt, setReturnedAt] = useState('');
   const [applyManualPenalty, setApplyManualPenalty] = useState(false);
@@ -34,6 +34,7 @@ export function WeighingPage() {
   const [saving, setSaving] = useState(false);
   const selectedSpecies = species.find((item) => item.id === speciesId);
   const weightNumber = Number(weightKg);
+  const quantityNumber = Math.max(1, Number(quantity) || 1);
   const isCoinFishByRule = Boolean(
     selectedSpecies &&
       (selectedSpecies.isCoinFish || selectedSpecies.coinMinimumWeightKg) &&
@@ -69,7 +70,7 @@ export function WeighingPage() {
     }
 
     const selectedTeam = teams.find((team) => team.id === teamId);
-    const confirmed = window.confirm(`Confirmar pesagem de ${weightNumber.toLocaleString('pt-BR')} kg para ${selectedTeam?.name ?? 'equipe'} (${selectedSpecies?.name ?? 'espécie'})?`);
+    const confirmed = window.confirm(`Confirmar ${quantityNumber} peixe(s) de ${weightNumber.toLocaleString('pt-BR')} kg para ${selectedTeam?.name ?? 'equipe'} (${selectedSpecies?.name ?? 'espécie'})?`);
     if (!confirmed) {
       return;
     }
@@ -80,6 +81,7 @@ export function WeighingPage() {
         team_id: teamId,
         species_id: speciesId,
         weight_kg: weightNumber,
+        quantity: quantityNumber,
         is_coin_fish: isCoinFish || isCoinFishByRule,
         returned_at: returnedAt ? new Date(returnedAt).toISOString() : null,
         created_by: profile?.id ?? null,
@@ -100,17 +102,17 @@ export function WeighingPage() {
       const teamCatches = await getCatchesByTeam(teamId);
       const entries = teamCatches.map((item) => ({
         id: item.id,
-          speciesId: item.species_id,
-          weightKg: Number(item.weight_kg),
-        }));
+        speciesId: item.species_id,
+        weightKg: Number(item.weight_kg),
+        quantity: Number(item.quantity ?? 1),
+      }));
       if (!teamCatches.some((item) => item.id === savedCatch.id)) {
-        entries.push({ id: savedCatch.id, speciesId: savedCatch.species_id, weightKg: Number(savedCatch.weight_kg) });
+        entries.push({ id: savedCatch.id, speciesId: savedCatch.species_id, weightKg: Number(savedCatch.weight_kg), quantity: Number(savedCatch.quantity ?? 1) });
       }
       const score = calculateScore(
         entries,
         {
           returnedAt,
-          totalFishPresented: totalFishPresented ? Number(totalFishPresented) : null,
           manualPenaltyMode,
           manualPenaltyValue: applyManualPenalty ? Number(manualPenaltyValue) : 0,
         },
@@ -132,7 +134,7 @@ export function WeighingPage() {
       });
       setFeedback('Pesagem salva com sucesso.');
       setWeightKg('');
-      setTotalFishPresented('');
+      setQuantity('1');
       setIsCoinFish(false);
       setReturnedAt('');
       setApplyManualPenalty(false);
@@ -191,21 +193,13 @@ export function WeighingPage() {
           </label>
 
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-graphite/70">Retorno oficial</span>
-            <input className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 outline-none focus:border-gold" onChange={(event) => setReturnedAt(event.target.value)} type="datetime-local" value={returnedAt} />
+            <span className="text-sm font-semibold text-graphite/70">Quantidade</span>
+            <input className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 outline-none focus:border-gold" inputMode="numeric" min="1" onChange={(event) => setQuantity(event.target.value)} step="1" type="number" value={quantity} />
           </label>
 
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-semibold text-graphite/70">Total de peixes apresentados</span>
-            <input
-              className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 outline-none focus:border-gold"
-              inputMode="numeric"
-              min="0"
-              onChange={(event) => setTotalFishPresented(event.target.value)}
-              placeholder="Se vazio, usa a quantidade de pesagens lançadas"
-              type="number"
-              value={totalFishPresented}
-            />
+            <span className="text-sm font-semibold text-graphite/70">Retorno oficial</span>
+            <input className="min-h-12 w-full rounded-2xl border border-sand bg-white px-4 py-3 outline-none focus:border-gold" onChange={(event) => setReturnedAt(event.target.value)} type="datetime-local" value={returnedAt} />
           </label>
         </div>
 

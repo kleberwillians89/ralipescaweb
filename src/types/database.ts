@@ -52,6 +52,7 @@ export type Catch = {
   team_id: string;
   species_id: string;
   weight_kg: number;
+  quantity: number;
   is_coin_fish: boolean;
   caught_at: string | null;
   returned_at: string | null;

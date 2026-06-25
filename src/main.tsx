@@ -9,7 +9,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 );
 
-console.info('Rali Pesca build:', import.meta.env.VITE_APP_VERSION ?? 'dev');
+const BUILD_VERSION = '2026-06-25-cache-fix';
+
+console.info('Rali Pesca build:', BUILD_VERSION);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
@@ -17,6 +19,11 @@ if ('serviceWorker' in navigator) {
 
     for (const registration of registrations) {
       await registration.unregister();
+    }
+
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
     }
   });
 }

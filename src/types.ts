@@ -25,6 +25,7 @@ export type CatchEntry = {
   id: string;
   speciesId: string;
   weightKg: number;
+  quantity: number;
   returnedAt?: string;
 };
 
