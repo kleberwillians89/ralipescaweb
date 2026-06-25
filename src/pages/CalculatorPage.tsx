@@ -1,9 +1,12 @@
-import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { Minus, Plus, RotateCcw, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Card } from '../components/Card';
 import { PageHeader } from '../components/PageHeader';
+import { useAuth } from '../contexts/AuthContext';
 import { species as demoSpecies } from '../data/species';
+import { saveTeamCalculation } from '../services/catchService';
 import { formatSupabaseError } from '../services/errorMessages';
+import { canManageTeams } from '../services/permissions';
 import { calculateScore, createCatchEntry } from '../services/scoring';
 import { getActiveSpecies } from '../services/speciesService';
 import { getTeams } from '../services/teamService';
@@ -13,6 +16,7 @@ import type { Team } from '../types/database';
 const formatScore = (value: number) => value.toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 
 export function CalculatorPage() {
+  const { profile } = useAuth();
   const [species, setSpecies] = useState<Species[]>(demoSpecies);
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamId, setTeamId] = useState('');
@@ -24,6 +28,8 @@ export function CalculatorPage() {
   const [manualPenaltyReason, setManualPenaltyReason] = useState('');
   const [manualPenaltyNotes, setManualPenaltyNotes] = useState('');
   const [loadError, setLoadError] = useState('');
+  const [saveFeedback, setSaveFeedback] = useState('');
+  const [savingCalculation, setSavingCalculation] = useState(false);
 
   useEffect(() => {
     Promise.all([getActiveSpecies(), getTeams()])
@@ -53,6 +59,7 @@ export function CalculatorPage() {
     [applyManualPenalty, entries, manualPenaltyMode, manualPenaltyValue, returnedAt, species],
   );
   const canAddFish = entries.length < 12;
+  const canSaveOfficialCalculation = canManageTeams(profile);
 
   const updateEntry = (id: string, changes: Partial<CatchEntry>) => {
     setEntries((current) => current.map((entry) => (entry.id === id ? { ...entry, ...changes } : entry)));
@@ -60,6 +67,89 @@ export function CalculatorPage() {
 
   const removeEntry = (id: string) => {
     setEntries((current) => (current.length === 1 ? current : current.filter((entry) => entry.id !== id)));
+  };
+
+  const resetCalculator = () => {
+    setEntries([createCatchEntry(species[0]?.id), createCatchEntry(species[0]?.id), createCatchEntry(species[0]?.id)]);
+    setReturnedAt('');
+    setApplyManualPenalty(false);
+    setManualPenaltyValue('');
+    setManualPenaltyReason('');
+    setManualPenaltyNotes('');
+    setSaveFeedback('');
+  };
+
+  const getCoinFishStatus = (entry: CatchEntry) => {
+    const selectedSpecies = species.find((item) => item.id === entry.speciesId);
+    const coinMinimumWeightKg = selectedSpecies?.coinMinimumWeightKg ?? selectedSpecies?.minimumWeightKg ?? null;
+
+    return Boolean(
+      selectedSpecies &&
+        (selectedSpecies.isCoinFish || selectedSpecies.coinMinimumWeightKg) &&
+        coinMinimumWeightKg &&
+        entry.weightKg >= coinMinimumWeightKg,
+    );
+  };
+
+  const handleSaveCalculation = async () => {
+    setSaveFeedback('');
+
+    if (!teamId) {
+      setSaveFeedback('Selecione uma equipe antes de salvar o cálculo.');
+      return;
+    }
+
+    const validEntries = entries.filter((entry) => entry.weightKg > 0 && (entry.quantity ?? 1) > 0);
+    if (validEntries.length === 0) {
+      setSaveFeedback('Adicione pelo menos um peixe válido antes de salvar.');
+      return;
+    }
+
+    const totalFishPresented = validEntries.reduce((total, entry) => total + Math.max(1, Math.floor(entry.quantity ?? 1)), 0);
+    const notes = [manualPenaltyReason, manualPenaltyNotes].filter(Boolean).join(' · ') || null;
+
+    setSavingCalculation(true);
+    try {
+      const payload = {
+        teamId,
+        fishes: validEntries.map((entry) => ({
+          speciesId: entry.speciesId,
+          weightKg: entry.weightKg,
+          quantity: Math.max(1, Math.floor(entry.quantity ?? 1)),
+          isCoinFish: getCoinFishStatus(entry),
+        })),
+        returnedAt,
+        totalFishPresented,
+        submittedBy: profile?.id ?? null,
+        replaceExisting: false,
+        score: {
+          baseScore: score.baseScore,
+          coinBonus: score.coinFishBonus,
+          schoolBonus: score.schoolBonus,
+          timeBonus: score.temporalBonus,
+          penalty: score.lowVolumePenalty + score.manualPenalty,
+          totalScore: score.total,
+        },
+        notes,
+      };
+
+      const result = await saveTeamCalculation(payload);
+      if (result.status === 'conflict') {
+        const confirmed = window.confirm('Esta equipe já possui pesagens salvas. Deseja substituir os dados anteriores?');
+        if (!confirmed) {
+          return;
+        }
+
+        await saveTeamCalculation({ ...payload, replaceExisting: true });
+      }
+
+      setSaveFeedback('Cálculo salvo com sucesso para a equipe.');
+    } catch (error) {
+      console.error('[Calculator] Erro ao salvar cálculo:', error);
+      setSaveFeedback('Erro ao salvar cálculo. Verifique sua permissão e tente novamente.');
+    } finally {
+      setSavingCalculation(false);
+    }
   };
 
   return (
@@ -186,10 +276,7 @@ export function CalculatorPage() {
             </button>
             <button
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-sand bg-white px-5 py-3 text-sm font-bold text-sea transition hover:-translate-y-0.5 hover:border-gold"
-              onClick={() => {
-                setEntries([createCatchEntry(species[0]?.id), createCatchEntry(species[0]?.id), createCatchEntry(species[0]?.id)]);
-                setReturnedAt('');
-              }}
+              onClick={resetCalculator}
               type="button"
             >
               <RotateCcw size={18} strokeWidth={1.8} />
@@ -204,6 +291,32 @@ export function CalculatorPage() {
             <p className="mt-2 break-words text-4xl font-bold sm:text-5xl">{formatScore(score.total)}</p>
             <p className="mt-1 text-sm text-white/65">pontos</p>
           </Card>
+
+          {canSaveOfficialCalculation ? (
+            <Card>
+              <div className="grid gap-3">
+                <button
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-sea px-5 py-3 text-sm font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-turquoise disabled:opacity-60"
+                  disabled={savingCalculation}
+                  onClick={() => void handleSaveCalculation()}
+                  type="button"
+                >
+                  <Save size={18} strokeWidth={1.8} />
+                  {savingCalculation ? 'Salvando...' : 'Salvar cálculo na equipe'}
+                </button>
+                <button
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-sand bg-white px-5 py-3 text-sm font-bold text-sea transition hover:-translate-y-0.5 hover:border-gold"
+                  onClick={resetCalculator}
+                  type="button"
+                >
+                  <RotateCcw size={18} strokeWidth={1.8} />
+                  Reiniciar
+                </button>
+                <p className="text-sm font-semibold text-graphite/65">Este salvamento alimenta o ranking oficial.</p>
+                {saveFeedback ? <p className="rounded-2xl bg-sand/45 px-4 py-3 text-sm font-semibold text-graphite/75">{saveFeedback}</p> : null}
+              </div>
+            </Card>
+          ) : null}
 
           <Card>
             <div className="space-y-3">

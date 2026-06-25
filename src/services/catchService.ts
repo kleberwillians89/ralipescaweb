@@ -1,6 +1,36 @@
 import type { Catch } from '../types/database';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 
+type TeamCalculationFish = {
+  speciesId: string;
+  weightKg: number;
+  quantity: number;
+  isCoinFish?: boolean;
+};
+
+type SaveTeamCalculationPayload = {
+  teamId: string;
+  fishes: TeamCalculationFish[];
+  returnedAt?: string;
+  totalFishPresented: number;
+  submittedBy?: string | null;
+  replaceExisting: boolean;
+  score?: {
+    baseScore: number;
+    coinBonus: number;
+    schoolBonus: number;
+    timeBonus: number;
+    penalty: number;
+    totalScore: number;
+  };
+  notes?: string | null;
+};
+
+type SaveTeamCalculationResult = {
+  status: 'saved' | 'conflict';
+  existingCount?: number;
+};
+
 export const createCatch = async (payload: Pick<Catch, 'team_id' | 'species_id' | 'weight_kg'> & Partial<Catch>): Promise<Catch> => {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase não configurado.');
@@ -12,6 +42,102 @@ export const createCatch = async (payload: Pick<Catch, 'team_id' | 'species_id' 
   }
 
   return data;
+};
+
+export const saveTeamCalculation = async ({
+  teamId,
+  fishes,
+  returnedAt,
+  totalFishPresented,
+  submittedBy,
+  replaceExisting,
+  score,
+  notes,
+}: SaveTeamCalculationPayload): Promise<SaveTeamCalculationResult> => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase não configurado.');
+  }
+
+  const { data: existingCatches, error: existingError } = await supabase
+    .from('catches')
+    .select('id')
+    .eq('team_id', teamId);
+  if (existingError) {
+    throw existingError;
+  }
+
+  if ((existingCatches?.length ?? 0) > 0 && !replaceExisting) {
+    return { status: 'conflict', existingCount: existingCatches?.length ?? 0 };
+  }
+
+  if (replaceExisting && (existingCatches?.length ?? 0) > 0) {
+    const { error: deleteError } = await supabase.from('catches').delete().eq('team_id', teamId);
+    if (deleteError) {
+      throw deleteError;
+    }
+  }
+
+  const savedAt = returnedAt ? new Date(returnedAt).toISOString() : new Date().toISOString();
+  const validFishes = fishes.filter((fish) => fish.weightKg > 0 && fish.quantity > 0);
+  if (validFishes.length > 0) {
+    const { error: insertError } = await supabase.from('catches').insert(
+      validFishes.map((fish) => ({
+        team_id: teamId,
+        species_id: fish.speciesId,
+        weight_kg: fish.weightKg,
+        quantity: Math.max(1, Math.floor(fish.quantity)),
+        is_coin_fish: Boolean(fish.isCoinFish),
+        caught_at: savedAt,
+        returned_at: returnedAt ? savedAt : null,
+        created_by: submittedBy ?? null,
+      })),
+    );
+    if (insertError) {
+      throw insertError;
+    }
+  }
+
+  const submissionPayload = {
+    team_id: teamId,
+    base_score: score?.baseScore ?? 0,
+    coin_bonus: score?.coinBonus ?? 0,
+    school_bonus: score?.schoolBonus ?? 0,
+    time_bonus: score?.timeBonus ?? 0,
+    penalty: score?.penalty ?? 0,
+    total_score: score?.totalScore ?? 0,
+    total_fish_presented: totalFishPresented,
+    submitted_by: submittedBy ?? null,
+    returned_at: returnedAt ? savedAt : null,
+    notes: notes ?? null,
+  };
+
+  const { data: existingSubmission, error: submissionLookupError } = await supabase
+    .from('score_submissions')
+    .select('id')
+    .eq('team_id', teamId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (submissionLookupError) {
+    throw submissionLookupError;
+  }
+
+  if (existingSubmission?.id) {
+    const { error: updateSubmissionError } = await supabase
+      .from('score_submissions')
+      .update(submissionPayload)
+      .eq('id', existingSubmission.id);
+    if (updateSubmissionError) {
+      throw updateSubmissionError;
+    }
+  } else {
+    const { error: insertSubmissionError } = await supabase.from('score_submissions').insert(submissionPayload);
+    if (insertSubmissionError) {
+      throw insertSubmissionError;
+    }
+  }
+
+  return { status: 'saved' };
 };
 
 export const updateCatch = async (catchId: string, updates: Partial<Catch>): Promise<Catch> => {
