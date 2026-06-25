@@ -15,14 +15,6 @@ type SaveTeamCalculationPayload = {
   totalFishPresented: number;
   submittedBy?: string | null;
   replaceExisting: boolean;
-  score?: {
-    baseScore: number;
-    coinBonus: number;
-    schoolBonus: number;
-    timeBonus: number;
-    penalty: number;
-    totalScore: number;
-  };
   notes?: string | null;
 };
 
@@ -51,7 +43,6 @@ export const saveTeamCalculation = async ({
   totalFishPresented,
   submittedBy,
   replaceExisting,
-  score,
   notes,
 }: SaveTeamCalculationPayload): Promise<SaveTeamCalculationResult> => {
   if (!isSupabaseConfigured || !supabase) {
@@ -63,6 +54,7 @@ export const saveTeamCalculation = async ({
     .select('id')
     .eq('team_id', teamId);
   if (existingError) {
+    console.error('[saveTeamCalculation] erro detalhado:', existingError);
     throw existingError;
   }
 
@@ -73,6 +65,7 @@ export const saveTeamCalculation = async ({
   if (replaceExisting && (existingCatches?.length ?? 0) > 0) {
     const { error: deleteError } = await supabase.from('catches').delete().eq('team_id', teamId);
     if (deleteError) {
+      console.error('[saveTeamCalculation] erro detalhado:', deleteError);
       throw deleteError;
     }
   }
@@ -88,26 +81,20 @@ export const saveTeamCalculation = async ({
         quantity: Math.max(1, Math.floor(fish.quantity)),
         is_coin_fish: Boolean(fish.isCoinFish),
         caught_at: savedAt,
-        returned_at: returnedAt ? savedAt : null,
         created_by: submittedBy ?? null,
       })),
     );
     if (insertError) {
+      console.error('[saveTeamCalculation] erro detalhado:', insertError);
       throw insertError;
     }
   }
 
   const submissionPayload = {
     team_id: teamId,
-    base_score: score?.baseScore ?? 0,
-    coin_bonus: score?.coinBonus ?? 0,
-    school_bonus: score?.schoolBonus ?? 0,
-    time_bonus: score?.timeBonus ?? 0,
-    penalty: score?.penalty ?? 0,
-    total_score: score?.totalScore ?? 0,
+    returned_at: returnedAt ? savedAt : null,
     total_fish_presented: totalFishPresented,
     submitted_by: submittedBy ?? null,
-    returned_at: returnedAt ? savedAt : null,
     notes: notes ?? null,
   };
 
@@ -119,6 +106,7 @@ export const saveTeamCalculation = async ({
     .limit(1)
     .maybeSingle();
   if (submissionLookupError) {
+    console.error('[saveTeamCalculation] erro detalhado:', submissionLookupError);
     throw submissionLookupError;
   }
 
@@ -128,11 +116,13 @@ export const saveTeamCalculation = async ({
       .update(submissionPayload)
       .eq('id', existingSubmission.id);
     if (updateSubmissionError) {
+      console.error('[saveTeamCalculation] erro detalhado:', updateSubmissionError);
       throw updateSubmissionError;
     }
   } else {
     const { error: insertSubmissionError } = await supabase.from('score_submissions').insert(submissionPayload);
     if (insertSubmissionError) {
+      console.error('[saveTeamCalculation] erro detalhado:', insertSubmissionError);
       throw insertSubmissionError;
     }
   }

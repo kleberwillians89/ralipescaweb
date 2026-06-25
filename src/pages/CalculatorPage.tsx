@@ -122,14 +122,6 @@ export function CalculatorPage() {
         totalFishPresented,
         submittedBy: profile?.id ?? null,
         replaceExisting: false,
-        score: {
-          baseScore: score.baseScore,
-          coinBonus: score.coinFishBonus,
-          schoolBonus: score.schoolBonus,
-          timeBonus: score.temporalBonus,
-          penalty: score.lowVolumePenalty + score.manualPenalty,
-          totalScore: score.total,
-        },
         notes,
       };
 
@@ -145,8 +137,8 @@ export function CalculatorPage() {
 
       setSaveFeedback('Cálculo salvo com sucesso para a equipe.');
     } catch (error) {
-      console.error('[Calculator] Erro ao salvar cálculo:', error);
-      setSaveFeedback('Erro ao salvar cálculo. Verifique sua permissão e tente novamente.');
+      console.error('[saveTeamCalculation] erro detalhado:', error);
+      setSaveFeedback(error instanceof Error ? error.message : 'Erro ao salvar cálculo. Verifique sua permissão e tente novamente.');
     } finally {
       setSavingCalculation(false);
     }

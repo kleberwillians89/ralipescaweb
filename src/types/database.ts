@@ -144,7 +144,7 @@ export type Database = {
       };
       score_submissions: {
         Row: ScoreSubmission;
-        Insert: Partial<ScoreSubmission> & Pick<ScoreSubmission, 'team_id' | 'total_score'>;
+        Insert: Partial<ScoreSubmission> & Pick<ScoreSubmission, 'team_id'>;
         Update: Partial<ScoreSubmission>;
         Relationships: [];
       };
