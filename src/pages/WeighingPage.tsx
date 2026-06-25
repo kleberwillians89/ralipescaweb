@@ -81,7 +81,7 @@ export function WeighingPage() {
           value: Number(manualPenaltyValue),
           reason: manualPenaltyReason || null,
           notes: notes || null,
-          created_by: profile?.user_id ?? null,
+          created_by: profile?.id ?? null,
         });
       }
 

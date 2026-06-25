@@ -2,10 +2,11 @@ export type UserRole = 'participant' | 'commission' | 'admin';
 
 export type Profile = {
   id: string;
-  user_id: string;
   full_name: string | null;
-  avatar_url: string | null;
+  email: string | null;
   role: UserRole;
+  phone: string | null;
+  team_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -40,12 +41,10 @@ export type Species = {
   name: string;
   category: string;
   multiplier: number;
-  fishing_method: string;
-  minimum_weight_kg: number;
-  coin_minimum_weight_kg: number | null;
-  is_active: boolean;
+  method: string | null;
+  coin_min_weight: number | null;
+  active: boolean;
   created_at: string;
-  updated_at: string;
 };
 
 export type Catch = {
@@ -111,7 +110,7 @@ export type Database = {
     Tables: {
       profiles: {
         Row: Profile;
-        Insert: Partial<Profile> & Pick<Profile, 'user_id'>;
+        Insert: Partial<Profile> & Pick<Profile, 'id'>;
         Update: Partial<Profile>;
         Relationships: [];
       };
@@ -129,7 +128,7 @@ export type Database = {
       };
       species: {
         Row: Species;
-        Insert: Partial<Species> & Pick<Species, 'name' | 'category' | 'multiplier' | 'fishing_method' | 'minimum_weight_kg'>;
+        Insert: Partial<Species> & Pick<Species, 'name' | 'category' | 'multiplier'>;
         Update: Partial<Species>;
         Relationships: [];
       };

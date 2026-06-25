@@ -20,7 +20,7 @@ export function ProfilePage() {
       <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
         <Card className="text-center">
           <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-sea text-3xl font-bold text-white shadow-soft">
-            {profile?.avatar_url ? <img alt={displayName} className="h-full w-full rounded-full object-cover" src={profile.avatar_url} /> : initials}
+            {initials}
           </div>
           <h2 className="mt-4 truncate text-2xl font-bold text-sea">{displayName}</h2>
           <p className="mt-1 text-sm capitalize text-graphite/65">{profile?.role ?? 'participant'}</p>
@@ -34,7 +34,7 @@ export function ProfilePage() {
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-graphite/60">E-mail</p>
-                <p className="truncate text-base font-bold text-graphite">{user?.email ?? 'demo@rali.local'}</p>
+                <p className="truncate text-base font-bold text-graphite">{profile?.email ?? user?.email ?? 'demo@rali.local'}</p>
               </div>
             </div>
           </Card>

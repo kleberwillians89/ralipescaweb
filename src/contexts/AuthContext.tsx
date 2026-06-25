@@ -24,10 +24,11 @@ type AuthContextValue = {
 
 const demoProfile: Profile = {
   id: 'demo-profile',
-  user_id: 'demo-user',
   full_name: 'Participante Demo',
-  avatar_url: null,
+  email: 'demo@rali.local',
   role: 'participant',
+  phone: null,
+  team_id: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
@@ -41,17 +42,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [demoAuthenticated, setDemoAuthenticated] = useState(false);
 
-  const loadProfile = async (userId: string) => {
+  const loadProfile = async (authUser: User) => {
     if (!supabase) {
       return null;
     }
 
-    const { data, error } = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
     if (error) {
       throw error;
     }
 
-    return data;
+    if (data) {
+      return data;
+    }
+
+    const { data: createdProfile, error: createError } = await supabase
+      .from('profiles')
+      .insert({
+        id: authUser.id,
+        email: authUser.email ?? null,
+        full_name: authUser.user_metadata?.full_name ?? authUser.email ?? 'Participante',
+        role: 'participant',
+      })
+      .select('*')
+      .single();
+    if (createError) {
+      throw createError;
+    }
+
+    return createdProfile;
   };
 
   useEffect(() => {
@@ -69,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setSession(data.session);
       setUser(data.session?.user ?? null);
-      setProfile(data.session?.user ? await loadProfile(data.session.user.id) : null);
+      setProfile(data.session?.user ? await loadProfile(data.session.user) : null);
       setLoading(false);
     });
 
@@ -83,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      loadProfile(nextSession.user.id)
+      loadProfile(nextSession.user)
         .then(setProfile)
         .catch((error) => console.error('[Rali Noronha] Erro ao carregar perfil:', error));
     });
@@ -110,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setSession(data.session);
         setUser(data.user);
-        setProfile(data.user ? await loadProfile(data.user.id) : null);
+        setProfile(data.user ? await loadProfile(data.user) : null);
       },
       signUp: async (email, password, profileData) => {
         if (!supabase) {
@@ -134,10 +153,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (data.user) {
-          const { error: profileError } = await supabase.from('profiles').insert({
-            user_id: data.user.id,
+          const { error: profileError } = await supabase.from('profiles').upsert({
+            id: data.user.id,
+            email: data.user.email ?? email,
             full_name: profileData?.full_name ?? email.split('@')[0],
-            role: profileData?.role ?? 'participant',
+            role: 'participant',
           });
           if (profileError) {
             throw profileError;

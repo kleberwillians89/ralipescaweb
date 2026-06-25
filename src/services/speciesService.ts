@@ -8,9 +8,9 @@ const mapSpecies = (item: DbSpecies): AppSpecies => ({
   name: item.name,
   category: item.category as AppSpecies['category'],
   multiplier: Number(item.multiplier),
-  fishingMethod: item.fishing_method,
-  minimumWeightKg: Number(item.minimum_weight_kg),
-  coinMinimumWeightKg: item.coin_minimum_weight_kg == null ? null : Number(item.coin_minimum_weight_kg),
+  fishingMethod: item.method ?? 'Não informado',
+  minimumWeightKg: 0,
+  coinMinimumWeightKg: item.coin_min_weight == null ? null : Number(item.coin_min_weight),
 });
 
 export const getSpecies = async (): Promise<AppSpecies[]> => {
@@ -31,7 +31,7 @@ export const getActiveSpecies = async (): Promise<AppSpecies[]> => {
     return demoSpecies;
   }
 
-  const { data, error } = await supabase.from('species').select('*').eq('is_active', true).order('name');
+  const { data, error } = await supabase.from('species').select('*').eq('active', true).order('name', { ascending: true });
   if (error) {
     throw error;
   }
